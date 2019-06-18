@@ -9,7 +9,6 @@
 
 import sys
 import os
-import threading
 import click
 import multiprocessing
 from query_runner import *
@@ -17,6 +16,7 @@ from timeit import default_timer as timer
 
 # Global, map of reports.
 seedReports = {}
+
 
 #####################################################################
 # Initialize seed reporting,
@@ -28,10 +28,11 @@ def InitSeedReports(seeds, iterations):
     for s in seeds:
         seedReports[s] = []
 
+
 #####################################################################
 # Generate a report summary.
 #######################################################################
-def FinalizeReport(depth, threads):
+def FinalizeReport(graphid, depth, threads):
     global seedReports
     # seed=19284, k=1, runId=0, avgNeighbor=91.0, execTime=0.197093009949
     # AVG Seed iterations.
@@ -42,14 +43,21 @@ def FinalizeReport(depth, threads):
     threadsTotalRuntime = [0] * threads
     runs = 0
 
+    # map to raw seed id
+    raw_seeds = []
+    if os.path.exists(graphid + '_unique_node'):
+        for line in open(graphid + '_unique_node'):
+            raw_seeds.append(line.strip())
+
     for seed in seedReports:
+        seed_raw = raw_seeds[int(seed)]
         report = seedReports[seed]
         for iterationReport in report:
             avgNeighbor = iterationReport['avgN']
             execTime = iterationReport['totalTime']
             threadId = iterationReport['threadId']
             threadsTotalRuntime[threadId] += execTime
-            output += "seed=%s, k=%d, avgNeighbor=%d, execTime=%f[ms]\r\n" %(seed, depth, avgNeighbor, execTime)
+            output += "seed=%s, k=%d, avgNeighbor=%d, execTime=%f[ms]\r\n" %(seed_raw, depth, avgNeighbor, execTime)
             output += "**************************************************************\r\n"
 
             avgKNSize += avgNeighbor
@@ -69,6 +77,7 @@ def FinalizeReport(depth, threads):
 
     return output
 
+
 #####################################################################
 # K-hop-path-neighbor-count benchmark workload.
 # (1) read prepared random nodes from a seed file under seed folder.
@@ -87,6 +96,7 @@ def GetSeeds(seed_file_path, count):
             print("Seed file does not contain enough seeds.")
             sys.exit()
 
+
 ###############################################################
 # function: thread worker, pull work item from pool
 # and execute query via runner
@@ -97,7 +107,7 @@ def RunKNLatencyThread(graphid, threadId, depth, provider, label, seedPool, repo
     elif provider == "tigergraph":
         runner = TigerGraphQueryRunner()
     else:
-        print "Unknown runner %s, quiting" % provider
+        print("Unknown runner %s, quiting" % provider)
         sys.exit()
 
     # As long as there's work to do...
@@ -132,23 +142,24 @@ def RunKNLatencyThread(graphid, threadId, depth, provider, label, seedPool, repo
         iterationSummary['totalTime'] = iterationTime
         reportQueue.put(iterationSummary, False)
 
+
 ###############################################################
 # function: check the total latency for k-hop-path neighbor count
 # query for a given set of seeds.
 ################################################################
 @click.command()
-@click.option('--graphid', '-g', default='graph500', help="graph id")
-@click.option('--seedfile', '-s', default='./seeds', help="seed file")
+@click.option('--graphid', '-g', default='graph500-22',
+              type=click.Choice(['graph500-22', 'twitter_rv_net']), help="graph id")
 @click.option('--count', '-c', default=20, help="number of seeds")
 @click.option('--depth', '-d', default=1, help="number of hops to perform")
 @click.option('--provider', '-p', default='redisgraph', help="graph identifier")
 @click.option('--label', '-l', default='label', help="node label")
 @click.option('--threads', '-t', default=2, help="number of querying threads")
 @click.option('--iterations', '-i', default=10, help="number of iterations per query")
-def RunKNLatency(graphid, seedfile, count, depth, provider, label, threads, iterations):
+def RunKNLatency(graphid, count, depth, provider, label, threads, iterations):
     #create result folder
     global seedReports
-
+    seedfile = os.path.join('data', graphid + '-seed')
     seeds = GetSeeds(seedfile, count)
 
     # Create a pool of seeds.
@@ -188,7 +199,7 @@ def RunKNLatency(graphid, seedfile, count, depth, provider, label, threads, iter
         seedReports[seed].append({'avgN': avgN, 'totalTime': totalTime, 'threadId': threadId})
 
     print("Finalizing report")
-    output = FinalizeReport(depth, threads)
+    output = FinalizeReport(graphid, depth, threads)
     dirName = "./result_" + provider +"/"
     fileName = "KN-latency-k%d-threads%d-iter%d" %(depth, threads, iterations)
     outputPath = os.path.join(dirName, fileName)
