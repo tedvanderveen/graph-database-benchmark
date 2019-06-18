@@ -1,13 +1,12 @@
 import os
 import sys
-import string
 
 # Read the node input file and translate the input IDs into a contiguous range.
 # Then, read the relation input file and translate all source and destination node IDs
 # to their updated contiguous values.
 
 # User-provided input data directory
-if len(sys.argv) < 2 or os.path.exists(sys.argv[1]) == False:
+if len(sys.argv) < 2 or os.path.exists(sys.argv[1]) is False:
     print("Usage: generate_inputs.py [path_to_inputs]")
     exit(1)
 
@@ -16,6 +15,7 @@ inputdir = sys.argv[1]
 # Input filenames
 nodefile = 'graph500-22_unique_node'
 relfile = 'graph500-22'
+seedfile = 'graph500-22-seed'
 
 # Output data directory
 datadir = 'data'
@@ -26,30 +26,21 @@ try:
 except OSError:
     pass
 
-# Count the number of unique nodes in the data set
-num_nodes = sum(1 for line in open(os.path.join(inputdir, nodefile)))
-
 updated_id = 0
 
 updated_node_file = open(os.path.join(datadir, nodefile), 'w')
 updated_node_file.write('id\n') # Output a header row
 updated_relation_file = open(os.path.join(datadir, relfile), 'w')
-
-# Scan the node file to find the highest node ID
-max_node = -1
-with open(os.path.join(inputdir, nodefile)) as f:
-    for line in f:
-        max_node = max(max_node, int(line))
+updated_seed_file = open(os.path.join(datadir, seedfile), 'w')
 
 # Map every node ID to its line number
 # and generate an updated node file.
-placement = [0]*(max_node + 1)
+placement = {}
 with open(os.path.join(inputdir, nodefile)) as f:
     for line in f:
-        node = int(line)
-        placement[node] = updated_id
-        updated_id += 1
+        placement[int(line)] = updated_id
         updated_node_file.write('%d\n' % (updated_id))
+        updated_id += 1
 
 with open(os.path.join(inputdir, relfile)) as f:
     for line in f:
@@ -63,5 +54,10 @@ with open(os.path.join(inputdir, relfile)) as f:
         # Output the updated edge description
         updated_relation_file.write("%d,%d\n" % (a, b))
 
+with open(os.path.join(inputdir, seedfile)) as f:
+    updated_seed_file.write(' '.join(str(placement[int(i)]) for i in f.read().split()))
+
+
 updated_node_file.close()
 updated_relation_file.close()
+updated_seed_file.close()
