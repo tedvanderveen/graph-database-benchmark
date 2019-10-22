@@ -7,12 +7,14 @@
 # Author: Mingxi Wu mingxi.wu@tigergraph.com
 ############################################################
 
-import sys
-import os
-import click
 import multiprocessing
-from query_runner import *
+import os
+import sys
 from timeit import default_timer as timer
+
+import click
+
+from query_runner import *
 
 # Global, map of reports.
 seedReports = {}
@@ -57,7 +59,7 @@ def FinalizeReport(graphid, depth, threads):
             execTime = iterationReport['totalTime']
             threadId = iterationReport['threadId']
             threadsTotalRuntime[threadId] += execTime
-            output += "seed=%s, k=%d, avgNeighbor=%d, execTime=%f[ms]\r\n" %(seed_raw, depth, avgNeighbor, execTime)
+            output += "seed=%s, k=%d, avgNeighbor=%d, execTime=%f[ms]\r\n" % (seed_raw, depth, avgNeighbor, execTime)
             output += "**************************************************************\r\n"
 
             avgKNSize += avgNeighbor
@@ -72,7 +74,8 @@ def FinalizeReport(graphid, depth, threads):
     # N queries.
     totalRuntime = max(threadsTotalRuntime)
 
-    output += "summary : avgKNSize=%f, avgQueryTime=%f[ms], totalRuntime=%f[ms]\r\n" %(avgKNSize, avgQueryTime, totalRuntime)
+    output += "summary : avgKNSize=%f, avgQueryTime=%f[ms], totalRuntime=%f[ms]\r\n" % (
+        avgKNSize, avgQueryTime, totalRuntime)
     output += "**************************************************************\r\n"
 
     return output
@@ -134,7 +137,7 @@ def RunKNLatencyThread(graphid, threadId, depth, provider, label, seedPool, repo
             iterationTime = -1
         else:
             iterationTime = end - start
-            iterationTime *= 1000 # convert from seconds to ms
+            iterationTime *= 1000  # convert from seconds to ms
 
         iterationSummary['threadId'] = threadId
         iterationSummary['seed'] = seed
@@ -157,7 +160,7 @@ def RunKNLatencyThread(graphid, threadId, depth, provider, label, seedPool, repo
 @click.option('--threads', '-t', default=2, help="number of querying threads")
 @click.option('--iterations', '-i', default=10, help="number of iterations per query")
 def RunKNLatency(graphid, count, depth, provider, label, threads, iterations):
-    #create result folder
+    # create result folder
     global seedReports
     seedfile = os.path.join('data', graphid + '-seed')
     seeds = GetSeeds(seedfile, count)
@@ -177,7 +180,8 @@ def RunKNLatency(graphid, count, depth, provider, label, threads, iterations):
     InitSeedReports(seeds, iterations)
     threadsProc = []
     for tid in range(threads):
-        p = multiprocessing.Process(target=RunKNLatencyThread, args=(graphid, tid, depth, provider, label, seedPool, reportQueue, iterations))
+        p = multiprocessing.Process(target=RunKNLatencyThread,
+                                    args=(graphid, tid, depth, provider, label, seedPool, reportQueue, iterations))
         threadsProc.append(p)
 
     # Launch threads
@@ -200,8 +204,8 @@ def RunKNLatency(graphid, count, depth, provider, label, threads, iterations):
 
     print("Finalizing report")
     output = FinalizeReport(graphid, depth, threads)
-    dirName = "./result_" + provider +"/"
-    fileName = "KN-latency-k%d-threads%d-iter%d" %(depth, threads, iterations)
+    dirName = "./result_" + provider + "/"
+    fileName = "KN-latency-k%d-threads%d-iter%d" % (depth, threads, iterations)
     outputPath = os.path.join(dirName, fileName)
 
     if not os.path.exists(dirName):

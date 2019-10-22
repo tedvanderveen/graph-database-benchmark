@@ -1,3 +1,4 @@
+```bash
 ############################################################
 # Copyright (c)  2015-now, TigerGraph Inc.
 # All rights reserved
@@ -6,10 +7,11 @@
 # acknowledgement to TigerGraph.
 # Author: Mingxi Wu mingxi.wu@tigergraph.com
 ############################################################
+```
 
-This article documents the details on how to reproduce the graph database benchmark result on Neo4j.
+This article documents the details on how to reproduce the graph database benchmark result on RedisGraph.
 
-Data Sets
+ Data Sets
 ===========
 - graph500 edge file: http://service.tigergraph.com/download/benchmark/dataset/graph500-22/graph500-22
 - graph500 vertex file: http://service.tigergraph.com/download/benchmark/dataset/graph500-22/graph500-22_unique_node
@@ -17,64 +19,48 @@ Data Sets
 - twitter edge file: http://service.tigergraph.com/download/benchmark/dataset/twitter/twitter_rv.tar.gz
 - twitter vertex file: http://service.tigergraph.com/download/benchmark/dataset/twitter/twitter_rv.net_unique_node
 
-Hardware & Major enviroment
+Hardware & Major environment
 ================================
 - Amazon EC2 machine r4.8xlarge
 - OS Ubuntu 18.04.1 LTS
 - Install the required Python modules with the following commands
-$ sudo apt-get update
-$ sudo apt-get install build-essential cmake python-pip python-dev  
-$ sudo pip install --upgrade pip
-$ sudo pip install redis click requests config
-
-
 - 32 vCPUs
 - 244 GiB memory
 - attached a 250G  EBS-optimized Provisioned IOPS SSD (IO1), IOPS we set is 50 IOPS/GiB
 
-RedisGraph Version
-==============
-Redis version 5.0.3
-RedisGraph module v1.0.0
+```bash
+sudo apt-get update
+sudo apt-get install build-essential cmake python-pip python-dev 
+sudo pip install --upgrade pip
+```
 
-Install Redis and RedisGraph
-===============
-git clone https://github.com/antirez/redis.git
-cd redis
-make
-sudo apt-get install tcl
-make test
-git clone https://github.com/RedisLabsModules/RedisGraph.git
-cd RedisGraph
-git checkout v1.0.0
-make
+------------------------------------
 
-Copy benchmark files:
-======================
-git clone https://github.com/RedisGraph/graph-database-benchmark.git
-
-Launching Redis
-===============
-# start server.
-~/redis/src/redis-server --loadmodule ~/RedisGraph/src/redisgraph.so &
-
-# to stop server
-#redis-cli shutdown
+# Setup the benchmark
+```bash
+git clone https://github.com/filipecosta90/graph-database-benchmark.git
+cd graph-database-benchmark/benchmark/redisgraph
+sudo pip install -r requirements.txt
+```
 
 Loading data
 ==============
-nohup ./redisgraph_load_graph500.sh path/to/redisgraph path/to/graph500/data
-nohup ./redisgraph_load_twitter.sh path/to/redisgraph path/to/twitter/data
+```bash
+nohup ./redisgraph_load_graph500.sh
+nohup ./redisgraph_load_twitter.sh
+```
 
-Example: ./redisgraph_load_graph500.sh ~/RedisGraph/ .
 
 Run K-hop neighborhood count benchmark
 ================
-# Change graph500-22-seed and twitter_rv.net-seed path to your seed file path.
-# Results will be stored in "result_redisgraph" output directory.
+Change graph500-22-seed and twitter_rv.net-seed path to your seed file path.
+
+Results will be stored in "result_redisgraph" output directory.
 
 Graph500
 -----------------
+
+```bash
 # 300 seeds, depth 1
 nohup python kn.py -g graph500 -s graph500-22-seed -c 300 -d 6 -p redisgraph -l graph500-22_unique_node -t 22 -i 1
 # 300 seeds, depth 2
@@ -83,9 +69,13 @@ nohup python kn.py -g graph500 -s graph500-22-seed -c 300 -d 6 -p redisgraph -l 
 nohup python kn.py -g graph500 -s graph500-22-seed -c 10 -d 6 -p redisgraph -l graph500-22_unique_node -t 22 -i 3
 # 10 seeds, depth 6
 nohup python kn.py -g graph500 -s graph500-22-seed -c 10 -d 6 -p redisgraph -l graph500-22_unique_node -t 22 -i 6
+```
 
-Twitter
+
+Twitter Benchmark
 -------------
+
+```bash
 # 300 seeds, depth 1
 nohup python kn.py -g twitter_rv -s twitter_rv_net-seed -c 300 -d 6 -p redisgraph -l twitter_rv_net_unique_node -t 22 -i 1
 # 300 seeds, depth 2
@@ -94,3 +84,4 @@ nohup python kn.py -g twitter_rv -s twitter_rv_net-seed -c 300 -d 6 -p redisgrap
 nohup python kn.py -g twitter_rv -s twitter_rv_net-seed -c 10 -d 6 -p redisgraph -l twitter_rv_net_unique_node -t 22 -i 3
 # 10 seeds, depth 6
 nohup python kn.py -g twitter_rv -s twitter_rv_net-seed -c 10 -d 6 -p redisgraph -l twitter_rv_net_unique_node -t 22 -i 6
+```
