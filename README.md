@@ -1,4 +1,10 @@
-Graph Database Benchmark : Neo4j vs Amazon Neptune vs Titan vs TigerGraph vs JanusGraph vs Arangodb
+Graph Database Benchmark : 
+
+
+
+
+# Full-Text Search Benchmark (FTSB)
+This repo contains code for benchmarking Graph databases.
 
 - same datasets
 - same query workload
@@ -10,3 +16,13 @@ Graph Database Benchmark : Neo4j vs Amazon Neptune vs Titan vs TigerGraph vs Jan
 - all test can be reproducible on EC2 or similar enviroment.
 
 Contact: benchmark@tigergraph.com
+
+Current databases supported:
+
++ Amazon Neptune [(benchmark folder)](benchmark/neptune/)
++ Arangodb  [(benchmark folder)](benchmark/arangodb/)
++ JanusGraph [(benchmark folder)](benchmark/janusgraph/)
++ Neo4j [(benchmark folder)](benchmark/neo4j/)
++ RedisGraph [(benchmark folder)](benchmark/redisgraph/)
++ TigerGraph [(benchmark folder)](benchmark/tigergraph/)
+

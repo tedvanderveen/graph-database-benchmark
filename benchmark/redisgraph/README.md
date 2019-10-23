@@ -9,17 +9,9 @@
 ############################################################
 ```
 
-This article documents the details on how to reproduce the graph database benchmark result on RedisGraph.
 
- Data Sets
-===========
-- graph500 edge file: http://service.tigergraph.com/download/benchmark/dataset/graph500-22/graph500-22
-- graph500 vertex file: http://service.tigergraph.com/download/benchmark/dataset/graph500-22/graph500-22_unique_node
 
-- twitter edge file: http://service.tigergraph.com/download/benchmark/dataset/twitter/twitter_rv.tar.gz
-- twitter vertex file: http://service.tigergraph.com/download/benchmark/dataset/twitter/twitter_rv.net_unique_node
-
-Hardware & Major environment
+Hardware & Major environment requirements
 ================================
 - Amazon EC2 machine r4.8xlarge
 - OS Ubuntu 18.04.1 LTS
@@ -34,31 +26,66 @@ sudo apt-get install build-essential cmake python-pip python-dev
 sudo pip install --upgrade pip
 ```
 
-------------------------------------
 
-# Setup the benchmark
+
+
+
+
+
+## Current use cases
+This article documents the details on how to reproduce the graph database benchmark result on RedisGraph.
+Currently, RedisGraph benchmark supports two use cases:
+ - graph500 
+- twitter 
+                                                                                                                                                                                                                   
+
+### How to use the benchmark
+
+Graph benchmarking involves 3 phases: data retrieval, data loading/insertion, and query execution.
+
+## Installation
+The easiest way to get and install the benchmark code is to use:
 ```bash
 git clone https://github.com/filipecosta90/graph-database-benchmark.git
 cd graph-database-benchmark/benchmark/redisgraph
 sudo pip install -r requirements.txt
 ```
 
-Loading data
-==============
+#### Data retrieval 
+
+Variables:
+1. `DATABASE_HOST` (default: `127.0.0.1`)
+1. `DATABASE_PORT` (default: `6379`)
+1. `BULK_DATA_DIR` (default: `/tmp/bulk_data`)
+1. `DATASET_NAME` (default: `dependent on the use case`)
+1. `EDGE_FILE` (default: `dependent on the use case`)
+1. `NODE_FILE` (default: `dependent on the use case`)
+
+The easiest way to get the datasets required for the benchmark is to use one of the helper scrips:
+1. `get_graph500_dataset.sh`
+or
+1. `get_twitter_dataset.sh`
+
+Sample output:
+```bash
+./get_graph500_dataset.sh
+```
+
+### Data insertion
+
 ```bash
 nohup ./redisgraph_load_graph500.sh
 nohup ./redisgraph_load_twitter.sh
 ```
 
 
-Run K-hop neighborhood count benchmark
-================
-Change graph500-22-seed and twitter_rv.net-seed path to your seed file path.
+### Benchmarking query execution performance
 
+#### Run K-hop neighborhood count benchmark
+Change graph500-22-seed and twitter_rv.net-seed path to your seed file path.
 Results will be stored in "result_redisgraph" output directory.
 
-Graph500
------------------
+##### Graph500
 
 ```bash
 # 300 seeds, depth 1
@@ -72,8 +99,7 @@ nohup python kn.py -g graph500 -s graph500-22-seed -c 10 -d 6 -p redisgraph -l g
 ```
 
 
-Twitter Benchmark
--------------
+##### Twitter Benchmark
 
 ```bash
 # 300 seeds, depth 1

@@ -16,7 +16,7 @@ if __name__ == "__main__":
         "--nodefile", type=str, default='graph500_22_unique_node', help="nodefile"
     )
     parser.add_argument(
-        "--relfile", type=str, default='graph5000_22', help="relfile"
+        "--relfile", type=str, default='graph500_22', help="relfile"
     )
     parser.add_argument("--seedfile", type=str, default='graph5000_220_seed', help="seed file")
     parser.add_argument("--inputdir", type=str, default='.', help="input dir")
