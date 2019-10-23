@@ -14,6 +14,8 @@ import os
 import sys
 from timeit import default_timer as timer
 
+from hdrh.histogram import HdrHistogram
+
 from query_runner import *
 
 # Global, map of reports.
@@ -34,15 +36,15 @@ def InitSeedReports(seeds, iterations):
 #####################################################################
 # Generate a report summary.
 #######################################################################
-def FinalizeReport(seedReports, unique_node_file, depth, threads):
+def FinalizeReport(seedReports, unique_node_file, depth, threads, debug):
     # seed=19284, k=1, runId=0, avgNeighbor=91.0, execTime=0.197093009949
     # AVG Seed iterations.
 
     output = ''
     avgKNSize = 0
-    avgQueryTime = 0
     threadsTotalRuntime = [0] * threads
     runs = 0
+    histogram = HdrHistogram(1, 1 * 1000 * 1000, 4)
 
     for seed in seedReports:
         report = seedReports[seed]
@@ -51,26 +53,34 @@ def FinalizeReport(seedReports, unique_node_file, depth, threads):
             execTime = iterationReport['totalTime']
             threadId = iterationReport['threadId']
             threadsTotalRuntime[threadId] += execTime
-            output += "seed=%s, k=%d, avgNeighbor=%d, execTime=%f[ms]\r\n" % (seed, depth, avgNeighbor, execTime)
-            output += "**************************************************************\r\n"
+            histogram.record_value(execTime * 1000)
+            if debug is True:
+                output += "seed=%s, k=%d, avgNeighbor=%d, execTime=%f[ms]\r\n" % (seed, depth, avgNeighbor, execTime)
+                output += "**************************************************************\r\n"
 
             avgKNSize += avgNeighbor
-            avgQueryTime += float(execTime)
             runs += 1
 
     avgKNSize /= runs
-    avgQueryTime /= float(runs)
 
     # We're interested in how much time did it took us to compute a single query on average
     # Our total run time equals max(threadsTotalRuntime), and we've completed running
     # N queries.
     totalRuntime = max(threadsTotalRuntime)
 
-    output += "summary : avgKNSize=%f, avgQueryTime=%f[ms], totalRuntime=%f[ms]\r\n" % (
-        avgKNSize, avgQueryTime, totalRuntime)
+    output += "**************************************************************\r\n"
+    output += "Summary : avgKNSize=%f, avgQueryTime=%f[ms], totalRuntime=%f[ms]\r\n" % (
+        avgKNSize, histogram.get_mean_value() / 1000.0,
+        totalRuntime)
+    output += "Latency by percentile : q50=%f[ms], q99=%f[ms], q99.99=%f[ms], q99.9999=%f[ms], \r\n" % (
+        histogram.get_value_at_percentile(50.0) / 1000.0,
+        histogram.get_value_at_percentile(90.0) / 1000.0,
+        histogram.get_value_at_percentile(99.99) / 1000.0,
+        histogram.get_value_at_percentile(99.9999) / 1000.0)
+
     output += "**************************************************************\r\n"
 
-    return output
+    return output, histogram
 
 
 #####################################################################
@@ -145,12 +155,11 @@ def RunKNLatencyThread(datadir, graphid, threadId, depth, provider, label, seedP
 ################################################################
 
 
-def RunKNLatency(data_dir, graphid, count, depth, provider, label, threads, iterations, url, seed, stdout):
+def RunKNLatency(data_dir, graphid, count, depth, provider, label, threads, iterations, url, seed, stdout, rules):
     # create result folder
     global seedReports
     seedfile = os.path.join(data_dir, seed)
     seeds = GetSeeds(seedfile, count)
-    print "## Seeds len {}".format(len(seeds))
 
     # Create a pool of seeds.
     seedPool = multiprocessing.Queue(len(seeds) * iterations)
@@ -194,11 +203,9 @@ def RunKNLatency(data_dir, graphid, count, depth, provider, label, threads, iter
 
     print("Finalizing report")
     unique_node_file = os.path.join(data_dir, label)
-    print unique_node_file
-    output = FinalizeReport(seedReports, unique_node_file, depth, threads)
+    output, hdrhist = FinalizeReport(seedReports, unique_node_file, depth, threads, False)
 
     if stdout is False:
-
         dirName = "./result_" + provider + "/"
         fileName = "KN-latency-k%d-threads%d-iter%d" % (depth, threads, iterations)
         outputPath = os.path.join(dirName, fileName)
@@ -209,10 +216,23 @@ def RunKNLatency(data_dir, graphid, count, depth, provider, label, threads, iter
         with open(outputPath, 'wt') as ofile:
             ofile.write(output)
 
+        HDR_LOG_NAME = "latency.hdrhist"
+        hdrPath = os.path.join(dirName, HDR_LOG_NAME)
+        with open(hdrPath, 'wt') as hdr_log:
+            hdrhist.output_percentile_distribution(hdr_log, 1000.0, 10)
+
     else:
+        hdrhist.output_percentile_distribution(sys.stdout, 1000.0, 10)
         print output
 
-    return True
+    for rule_name, rule_value in rules.items():
+        quantile = float(rule_name)
+        quantile_value = hdrhist.get_value_at_percentile(quantile) / 1000
+        if quantile_value > rule_value:
+            print "Failing due to quantile {} latency value {}ms being larger than allowed ({})".format(quantile,
+                                                                                                        quantile_value,
+                                                                                                        rule_value)
+            sys.exit()
 
 
 if __name__ == '__main__':
@@ -245,10 +265,14 @@ if __name__ == '__main__':
         "--threads", "-t", type=int, default=1, help="number of querying threads"
     )
     parser.add_argument(
-        "--iterations", "-i", type=int,  default=1, help="number of iterations per query"
+        "--iterations", "-i", type=int, default=1, help="number of iterations per query"
     )
-    parser.add_argument('--stdout', type=bool, default=True, help="print report to stdout")
+    parser.add_argument('--stdout', dest='stdout', action='store_true', help="print report to stdout")
+    parser.add_argument(
+        "--fail_q50", type=float, default=sys.float_info.max, help="Fail if overall latency q50 above threshold"
+    )
 
     args = parser.parse_args()
+    rules = {'50.0': args.fail_q50}
     RunKNLatency(args.data_dir, args.graphid, args.count, args.depth, args.provider, args.label, args.threads,
-                 args.iterations, args.url, args.seed, args.stdout)
+                 args.iterations, args.url, args.seed, args.stdout, rules)
