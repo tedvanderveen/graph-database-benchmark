@@ -104,9 +104,9 @@ def GetSeeds(seed_file_path, count):
 # function: thread worker, pull work item from pool
 # and execute query via runner
 ################################################################
-def RunKNLatencyThread(graphid, threadId, depth, provider, label, seedPool, reportQueue, iterations):
+def RunKNLatencyThread(graphid, threadId, depth, provider, label, seedPool, reportQueue, iterations, url):
     if provider == "redisgraph":
-        runner = RedisGraphQueryRunner(graphid, label)
+        runner = RedisGraphQueryRunner(graphid, label, url)
     elif provider == "tigergraph":
         runner = TigerGraphQueryRunner()
     else:
@@ -151,19 +151,22 @@ def RunKNLatencyThread(graphid, threadId, depth, provider, label, seedPool, repo
 # query for a given set of seeds.
 ################################################################
 @click.command()
-@click.option('--graphid', '-g', default='graph500-22',
-              type=click.Choice(['graph500-22', 'twitter_rv_net']), help="graph id")
+@click.option('--graphid', '-g', default='graph500_22',
+              type=click.Choice(['graph500_22', 'twitter_rv_net']), help="graph id")
 @click.option('--count', '-c', default=20, help="number of seeds")
 @click.option('--depth', '-d', default=1, help="number of hops to perform")
 @click.option('--provider', '-p', default='redisgraph', help="graph identifier")
+@click.option('--url', '-u', default='127.0.0.1:6379', help="DB url")
 @click.option('--label', '-l', default='label', help="node label")
+# @click.option('--seed', '-s', default='seed', help="seed file")
 @click.option('--threads', '-t', default=2, help="number of querying threads")
 @click.option('--iterations', '-i', default=10, help="number of iterations per query")
-def RunKNLatency(graphid, count, depth, provider, label, threads, iterations):
+def RunKNLatency(graphid, count, depth, provider, label, threads, iterations,url):
     # create result folder
     global seedReports
-    seedfile = os.path.join('data', graphid + '-seed')
+    seedfile = os.path.join('data', graphid + '_seed')
     seeds = GetSeeds(seedfile, count)
+    print "## Seeds len {}".format(len(seeds))
 
     # Create a pool of seeds.
     seedPool = multiprocessing.Queue(len(seeds) * iterations)
@@ -181,7 +184,7 @@ def RunKNLatency(graphid, count, depth, provider, label, threads, iterations):
     threadsProc = []
     for tid in range(threads):
         p = multiprocessing.Process(target=RunKNLatencyThread,
-                                    args=(graphid, tid, depth, provider, label, seedPool, reportQueue, iterations))
+                                    args=(graphid, tid, depth, provider, label, seedPool, reportQueue, iterations,url))
         threadsProc.append(p)
 
     # Launch threads

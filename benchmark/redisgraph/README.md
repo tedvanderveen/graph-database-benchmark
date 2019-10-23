@@ -27,9 +27,12 @@ sudo pip install --upgrade pip
 ## Current use cases
 This article documents the details on how to reproduce the graph database benchmark result on RedisGraph.
 Currently, RedisGraph benchmark supports two use cases:
- - graph500 
-- twitter 
-                                                                                                                                                                                                                   
+
+
+Name | Description and Source | Vertices | Edges
+-- | -- | -- | --
+graph500 | Synthetic Kronecker graphhttp://graph500.org | 2.4 M | 64 M
+twitter | Twitter user-follower directed graphhttp://an.kaist.ac.kr/traces/WWW2010.html | 41.6 M | 1.47 B                                                                                                                                                                                                 
 
 ### How to use the benchmark
 
@@ -95,26 +98,26 @@ Results will be stored in "result_redisgraph" output directory.
 ##### Graph500
 
 ```bash
-# 300 seeds, depth 1
-nohup python kn.py -g graph500 -s graph500_22_seed -c 300 -d 6 -p redisgraph -l graph500_22_unique_node -t 22 -i 1
-# 300 seeds, depth 2
-nohup python kn.py -g graph500 -s graph500_22_seed -c 300 -d 6 -p redisgraph -l graph500_22_unique_node -t 22 -i 2
-# 10 seeds, depth 3
+# 300 seeds, depth 1, 3 iterations per query
+nohup python kn.py -g graph500 -s graph500_22_seed -c 300 -d 1 -p redisgraph -l graph500_22_unique_node -t 22 -i 3
+# 300 seeds, depth 2, 3 iterations per query
+nohup python kn.py -g graph500 -s graph500_22_seed -c 300 -d 2 -p redisgraph -l graph500_22_unique_node -t 22 -i 3
+# 10 seeds, depth 3, 3 iterations per query
+nohup python kn.py -g graph500 -s graph500_22_seed -c 10 -d 3 -p redisgraph -l graph500_22_unique_node -t 22 -i 3
+# 10 seeds, depth 6, 3 iterations per query
 nohup python kn.py -g graph500 -s graph500_22_seed -c 10 -d 6 -p redisgraph -l graph500_22_unique_node -t 22 -i 3
-# 10 seeds, depth 6
-nohup python kn.py -g graph500 -s graph500_22_seed -c 10 -d 6 -p redisgraph -l graph500_22_unique_node -t 22 -i 6
 ```
 
 
 ##### Twitter Benchmark
 
 ```bash
-# 300 seeds, depth 1
-nohup python kn.py -g twitter_rv -s twitter_rv_net_seed -c 300 -d 6 -p redisgraph -l twitter_rv_net_unique_node -t 22 -i 1
-# 300 seeds, depth 2
-nohup python kn.py -g twitter_rv -s twitter_rv_net_seed -c 300 -d 6 -p redisgraph -l twitter_rv_net_unique_node -t 22 -i 2
-# 10 seeds, depth 3
+# 300 seeds, depth 1, 3 iterations per query
+nohup python kn.py -g twitter_rv -s twitter_rv_net_seed -c 300 -d 1 -p redisgraph -l twitter_rv_net_unique_node -t 22 -i 3
+# 300 seeds, depth 2, 3 iterations per query
+nohup python kn.py -g twitter_rv -s twitter_rv_net_seed -c 300 -d 2 -p redisgraph -l twitter_rv_net_unique_node -t 22 -i 3
+# 10 seeds, depth 3, 3 iterations per query
+nohup python kn.py -g twitter_rv -s twitter_rv_net_seed -c 10 -d 3 -p redisgraph -l twitter_rv_net_unique_node -t 22 -i 3
+# 10 seeds, depth 6, 3 iterations per query
 nohup python kn.py -g twitter_rv -s twitter_rv_net_seed -c 10 -d 6 -p redisgraph -l twitter_rv_net_unique_node -t 22 -i 3
-# 10 seeds, depth 6
-nohup python kn.py -g twitter_rv -s twitter_rv_net_seed -c 10 -d 6 -p redisgraph -l twitter_rv_net_unique_node -t 22 -i 6
 ```
