@@ -9,8 +9,6 @@
 ############################################################
 ```
 
-
-
 Hardware & Major environment requirements
 ================================
 - Amazon EC2 machine r4.8xlarge
@@ -25,12 +23,6 @@ sudo apt-get update
 sudo apt-get install build-essential cmake python-pip python-dev 
 sudo pip install --upgrade pip
 ```
-
-
-
-
-
-
 
 ## Current use cases
 This article documents the details on how to reproduce the graph database benchmark result on RedisGraph.
@@ -73,9 +65,24 @@ Sample output:
 
 ### Data insertion
 
+##### Graph500
 ```bash
-nohup ./redisgraph_load_graph500.sh
-nohup ./redisgraph_load_twitter.sh
+./redisgraph_load_graph500.sh
+```
+
+Sample output:
+```bash
+
+```
+
+##### Twitter Benchmark
+```bash
+./redisgraph_load_twitter.sh
+```
+
+Sample output:
+```bash
+
 ```
 
 
@@ -89,13 +96,13 @@ Results will be stored in "result_redisgraph" output directory.
 
 ```bash
 # 300 seeds, depth 1
-nohup python kn.py -g graph500 -s graph500-22-seed -c 300 -d 6 -p redisgraph -l graph500-22_unique_node -t 22 -i 1
+nohup python kn.py -g graph500 -s graph500_22_seed -c 300 -d 6 -p redisgraph -l graph500_22_unique_node -t 22 -i 1
 # 300 seeds, depth 2
-nohup python kn.py -g graph500 -s graph500-22-seed -c 300 -d 6 -p redisgraph -l graph500-22_unique_node -t 22 -i 2
+nohup python kn.py -g graph500 -s graph500_22_seed -c 300 -d 6 -p redisgraph -l graph500_22_unique_node -t 22 -i 2
 # 10 seeds, depth 3
-nohup python kn.py -g graph500 -s graph500-22-seed -c 10 -d 6 -p redisgraph -l graph500-22_unique_node -t 22 -i 3
+nohup python kn.py -g graph500 -s graph500_22_seed -c 10 -d 6 -p redisgraph -l graph500_22_unique_node -t 22 -i 3
 # 10 seeds, depth 6
-nohup python kn.py -g graph500 -s graph500-22-seed -c 10 -d 6 -p redisgraph -l graph500-22_unique_node -t 22 -i 6
+nohup python kn.py -g graph500 -s graph500_22_seed -c 10 -d 6 -p redisgraph -l graph500_22_unique_node -t 22 -i 6
 ```
 
 
@@ -103,11 +110,11 @@ nohup python kn.py -g graph500 -s graph500-22-seed -c 10 -d 6 -p redisgraph -l g
 
 ```bash
 # 300 seeds, depth 1
-nohup python kn.py -g twitter_rv -s twitter_rv_net-seed -c 300 -d 6 -p redisgraph -l twitter_rv_net_unique_node -t 22 -i 1
+nohup python kn.py -g twitter_rv -s twitter_rv_net_seed -c 300 -d 6 -p redisgraph -l twitter_rv_net_unique_node -t 22 -i 1
 # 300 seeds, depth 2
-nohup python kn.py -g twitter_rv -s twitter_rv_net-seed -c 300 -d 6 -p redisgraph -l twitter_rv_net_unique_node -t 22 -i 2
+nohup python kn.py -g twitter_rv -s twitter_rv_net_seed -c 300 -d 6 -p redisgraph -l twitter_rv_net_unique_node -t 22 -i 2
 # 10 seeds, depth 3
-nohup python kn.py -g twitter_rv -s twitter_rv_net-seed -c 10 -d 6 -p redisgraph -l twitter_rv_net_unique_node -t 22 -i 3
+nohup python kn.py -g twitter_rv -s twitter_rv_net_seed -c 10 -d 6 -p redisgraph -l twitter_rv_net_unique_node -t 22 -i 3
 # 10 seeds, depth 6
-nohup python kn.py -g twitter_rv -s twitter_rv_net-seed -c 10 -d 6 -p redisgraph -l twitter_rv_net_unique_node -t 22 -i 6
+nohup python kn.py -g twitter_rv -s twitter_rv_net_seed -c 10 -d 6 -p redisgraph -l twitter_rv_net_unique_node -t 22 -i 6
 ```
