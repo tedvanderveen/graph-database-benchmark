@@ -8,13 +8,11 @@
 # acknowledgement to TigerGraph.
 # Author: Mingxi Wu mingxi.wu@tigergraph.com
 ############################################################
-
+import argparse
 import multiprocessing
 import os
 import sys
 from timeit import default_timer as timer
-
-import click
 
 from query_runner import *
 
@@ -36,8 +34,7 @@ def InitSeedReports(seeds, iterations):
 #####################################################################
 # Generate a report summary.
 #######################################################################
-def FinalizeReport(unique_node_file, depth, threads):
-    global seedReports
+def FinalizeReport(seedReports, unique_node_file, depth, threads):
     # seed=19284, k=1, runId=0, avgNeighbor=91.0, execTime=0.197093009949
     # AVG Seed iterations.
 
@@ -47,24 +44,14 @@ def FinalizeReport(unique_node_file, depth, threads):
     threadsTotalRuntime = [0] * threads
     runs = 0
 
-    # map to raw seed id
-    raw_seeds = []
-    if not os.path.exists(unique_node_file):
-        print("Unique node file does not exists: " + unique_node_file)
-        sys.exit()
-
-    for line in open(unique_node_file):
-        raw_seeds.append(line.strip())
-
     for seed in seedReports:
-        seed_raw = raw_seeds[int(seed)]
         report = seedReports[seed]
         for iterationReport in report:
             avgNeighbor = iterationReport['avgN']
             execTime = iterationReport['totalTime']
             threadId = iterationReport['threadId']
             threadsTotalRuntime[threadId] += execTime
-            output += "seed=%s, k=%d, avgNeighbor=%d, execTime=%f[ms]\r\n" % (seed_raw, depth, avgNeighbor, execTime)
+            output += "seed=%s, k=%d, avgNeighbor=%d, execTime=%f[ms]\r\n" % (seed, depth, avgNeighbor, execTime)
             output += "**************************************************************\r\n"
 
             avgKNSize += avgNeighbor
@@ -156,19 +143,8 @@ def RunKNLatencyThread(datadir, graphid, threadId, depth, provider, label, seedP
 # function: check the total latency for k-hop-path neighbor count
 # query for a given set of seeds.
 ################################################################
-@click.command()
-@click.option('--graphid', '-g', default='graph500_22',
-              type=click.Choice(['graph500_22', 'twitter_rv_net']), help="graph id")
-@click.option('--count', '-c', default=1, help="number of seeds")
-@click.option('--depth', '-d', default=1, help="number of hops to perform")
-@click.option('--provider', '-p', default='redisgraph', help="graph identifier")
-@click.option('--url', '-u', default='127.0.0.1:6379', help="DB url")
-@click.option('--label', '-l', default='graph500_22_unique_node', help="node label")
-@click.option('--seed', '-s', default='seed', help="seed file")
-@click.option('--data_dir', default='data', help="data dir")
-@click.option('--threads', '-t', default=1, help="number of querying threads")
-@click.option('--iterations', '-i', default=1, help="number of iterations per query")
-@click.option('--stdout', type=bool, default=True, help="print report to stdout")
+
+
 def RunKNLatency(data_dir, graphid, count, depth, provider, label, threads, iterations, url, seed, stdout):
     # create result folder
     global seedReports
@@ -218,7 +194,8 @@ def RunKNLatency(data_dir, graphid, count, depth, provider, label, threads, iter
 
     print("Finalizing report")
     unique_node_file = os.path.join(data_dir, label)
-    output = FinalizeReport(unique_node_file, depth, threads)
+    print unique_node_file
+    output = FinalizeReport(seedReports, unique_node_file, depth, threads)
 
     if stdout is False:
 
@@ -239,4 +216,39 @@ def RunKNLatency(data_dir, graphid, count, depth, provider, label, threads, iter
 
 
 if __name__ == '__main__':
-    RunKNLatency()
+    parser = argparse.ArgumentParser(description="check the total latency for k-hop-path neighbor count.")
+    parser.add_argument(
+        "--graphid", "-g", type=str, default='graph500_22', help="graph id"
+    )
+    parser.add_argument(
+        "--count", "-c", type=int, default=1, help="number of seeds"
+    )
+    parser.add_argument(
+        "--depth", "-d", type=int, default=1, help="number of hops to perform"
+    )
+    parser.add_argument(
+        "--provider", "-p", type=str, default="redisgraph", help="graph identifier"
+    )
+    parser.add_argument(
+        "--url", "-u", type=str, default="127.0.0.1:6379", help="DB url"
+    )
+    parser.add_argument(
+        "--label", "-l", type=str, default="graph500_22_unique_node", help="node label"
+    )
+    parser.add_argument(
+        "--seed", "-s", type=str, default="seed", help="seed file"
+    )
+    parser.add_argument(
+        "--data_dir", type=str, default="data", help="data dir"
+    )
+    parser.add_argument(
+        "--threads", "-t", type=int, default=1, help="number of querying threads"
+    )
+    parser.add_argument(
+        "--iterations", "-i", type=int,  default=1, help="number of iterations per query"
+    )
+    parser.add_argument('--stdout', type=bool, default=True, help="print report to stdout")
+
+    args = parser.parse_args()
+    RunKNLatency(args.data_dir, args.graphid, args.count, args.depth, args.provider, args.label, args.threads,
+                 args.iterations, args.url, args.seed, args.stdout)
