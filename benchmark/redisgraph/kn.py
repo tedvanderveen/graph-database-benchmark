@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 ############################################################
 # Copyright (c)  2015-now, TigerGraph Inc.
 # All rights reserved
@@ -34,7 +36,7 @@ def InitSeedReports(seeds, iterations):
 #####################################################################
 # Generate a report summary.
 #######################################################################
-def FinalizeReport(graphid, depth, threads):
+def FinalizeReport(unique_node_file, depth, threads):
     global seedReports
     # seed=19284, k=1, runId=0, avgNeighbor=91.0, execTime=0.197093009949
     # AVG Seed iterations.
@@ -47,9 +49,12 @@ def FinalizeReport(graphid, depth, threads):
 
     # map to raw seed id
     raw_seeds = []
-    if os.path.exists(graphid + '_unique_node'):
-        for line in open(graphid + '_unique_node'):
-            raw_seeds.append(line.strip())
+    if not os.path.exists(unique_node_file):
+        print("Unique node file does not exists: " + unique_node_file)
+        sys.exit()
+
+    for line in open(unique_node_file):
+        raw_seeds.append(line.strip())
 
     for seed in seedReports:
         seed_raw = raw_seeds[int(seed)]
@@ -104,7 +109,8 @@ def GetSeeds(seed_file_path, count):
 # function: thread worker, pull work item from pool
 # and execute query via runner
 ################################################################
-def RunKNLatencyThread(graphid, threadId, depth, provider, label, seedPool, reportQueue, iterations, url):
+def RunKNLatencyThread(datadir, graphid, threadId, depth, provider, label, seedPool, reportQueue, iterations, url,
+                       seed):
     if provider == "redisgraph":
         runner = RedisGraphQueryRunner(graphid, label, url)
     elif provider == "tigergraph":
@@ -153,18 +159,20 @@ def RunKNLatencyThread(graphid, threadId, depth, provider, label, seedPool, repo
 @click.command()
 @click.option('--graphid', '-g', default='graph500_22',
               type=click.Choice(['graph500_22', 'twitter_rv_net']), help="graph id")
-@click.option('--count', '-c', default=20, help="number of seeds")
+@click.option('--count', '-c', default=1, help="number of seeds")
 @click.option('--depth', '-d', default=1, help="number of hops to perform")
 @click.option('--provider', '-p', default='redisgraph', help="graph identifier")
 @click.option('--url', '-u', default='127.0.0.1:6379', help="DB url")
-@click.option('--label', '-l', default='label', help="node label")
-# @click.option('--seed', '-s', default='seed', help="seed file")
-@click.option('--threads', '-t', default=2, help="number of querying threads")
-@click.option('--iterations', '-i', default=10, help="number of iterations per query")
-def RunKNLatency(graphid, count, depth, provider, label, threads, iterations,url):
+@click.option('--label', '-l', default='graph500_22_unique_node', help="node label")
+@click.option('--seed', '-s', default='seed', help="seed file")
+@click.option('--data_dir', default='data', help="data dir")
+@click.option('--threads', '-t', default=1, help="number of querying threads")
+@click.option('--iterations', '-i', default=1, help="number of iterations per query")
+@click.option('--stdout', type=bool, default=True, help="print report to stdout")
+def RunKNLatency(data_dir, graphid, count, depth, provider, label, threads, iterations, url, seed, stdout):
     # create result folder
     global seedReports
-    seedfile = os.path.join('data', graphid + '_seed')
+    seedfile = os.path.join(data_dir, seed)
     seeds = GetSeeds(seedfile, count)
     print "## Seeds len {}".format(len(seeds))
 
@@ -184,7 +192,10 @@ def RunKNLatency(graphid, count, depth, provider, label, threads, iterations,url
     threadsProc = []
     for tid in range(threads):
         p = multiprocessing.Process(target=RunKNLatencyThread,
-                                    args=(graphid, tid, depth, provider, label, seedPool, reportQueue, iterations,url))
+                                    args=(
+                                        data_dir, graphid, tid, depth, provider, label, seedPool, reportQueue,
+                                        iterations,
+                                        url, seed))
         threadsProc.append(p)
 
     # Launch threads
@@ -206,16 +217,25 @@ def RunKNLatency(graphid, count, depth, provider, label, threads, iterations,url
         seedReports[seed].append({'avgN': avgN, 'totalTime': totalTime, 'threadId': threadId})
 
     print("Finalizing report")
-    output = FinalizeReport(graphid, depth, threads)
-    dirName = "./result_" + provider + "/"
-    fileName = "KN-latency-k%d-threads%d-iter%d" % (depth, threads, iterations)
-    outputPath = os.path.join(dirName, fileName)
+    unique_node_file = os.path.join(data_dir, label)
+    output = FinalizeReport(unique_node_file, depth, threads)
 
-    if not os.path.exists(dirName):
-        os.makedirs(dirName)
+    if stdout is False:
 
-    with open(outputPath, 'wt') as ofile:
-        ofile.write(output)
+        dirName = "./result_" + provider + "/"
+        fileName = "KN-latency-k%d-threads%d-iter%d" % (depth, threads, iterations)
+        outputPath = os.path.join(dirName, fileName)
+
+        if not os.path.exists(dirName):
+            os.makedirs(dirName)
+
+        with open(outputPath, 'wt') as ofile:
+            ofile.write(output)
+
+    else:
+        print output
+
+    return True
 
 
 if __name__ == '__main__':

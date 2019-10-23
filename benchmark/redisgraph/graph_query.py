@@ -31,6 +31,6 @@ if __name__ == "__main__":
 
     # Attempt to verify that RedisGraph module is loaded
     try:
-        module_list = client.execute_command("GRAPH.QUERY {} \"{}\"".format(args.name, args.query))
+        module_list = client.execute_command("GRAPH.QUERY", args.name, args.query)
     except redis.exceptions.ResponseError as e:
         raise e

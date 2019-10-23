@@ -31,8 +31,8 @@ Currently, RedisGraph benchmark supports two use cases:
 
 Name | Description and Source | Vertices | Edges
 -- | -- | -- | --
-graph500 | Synthetic Kronecker graphhttp://graph500.org | 2.4 M | 64 M
-twitter | Twitter user-follower directed graphhttp://an.kaist.ac.kr/traces/WWW2010.html | 41.6 M | 1.47 B                                                                                                                                                                                                 
+graph500 | Synthetic Kronecker graph http://graph500.org | 2.4 M | 64 M
+twitter | Twitter user-follower directed graph http://an.kaist.ac.kr/traces/WWW2010.html | 41.6 M | 1.47 B                                                                                                                                                                                                 
 
 ### How to use the benchmark
 
@@ -75,7 +75,13 @@ Sample output:
 
 Sample output:
 ```bash
-
++python bulk_insert.py graph500_22 -n data/graph500_22_unique_node -r data/graph500_22
+graph500_22_unique_node  [####################################]  100%          
+2396019 nodes created with label 'graph500_22_unique_node'
+graph500_22  [####################################]  100%          
+67108863 relations created for type 'graph500_22'
+Construction of graph 'graph500_22' complete: 2396019 nodes created, 67108863 relations created in 1410.983482 seconds
++python graph_query.py --name "graph500_22" --query "create index on :graph500_22_unique_node(id)"
 ```
 
 ##### Twitter Benchmark
@@ -98,14 +104,14 @@ Results will be stored in "result_redisgraph" output directory.
 ##### Graph500
 
 ```bash
-# 300 seeds, depth 1, 3 iterations per query
-nohup python kn.py -g graph500 -s graph500_22_seed -c 300 -d 1 -p redisgraph -l graph500_22_unique_node -t 22 -i 3
-# 300 seeds, depth 2, 3 iterations per query
-nohup python kn.py -g graph500 -s graph500_22_seed -c 300 -d 2 -p redisgraph -l graph500_22_unique_node -t 22 -i 3
-# 10 seeds, depth 3, 3 iterations per query
-nohup python kn.py -g graph500 -s graph500_22_seed -c 10 -d 3 -p redisgraph -l graph500_22_unique_node -t 22 -i 3
-# 10 seeds, depth 6, 3 iterations per query
-nohup python kn.py -g graph500 -s graph500_22_seed -c 10 -d 6 -p redisgraph -l graph500_22_unique_node -t 22 -i 3
+# 300 seeds, depth 1, 10 iterations per query
+python kn.py -g graph500_22 -s graph500_22_seed -c 300 -d 1 -p redisgraph -l graph500_22_unique_node -t 22 -i 10
+# 300 seeds, depth 2, 10 iterations per query
+python kn.py -g graph500_22 -s graph500_22_seed -c 300 -d 2 -p redisgraph -l graph500_22_unique_node -t 22 -i 10
+# 10 seeds, depth 3, 10 iterations per query
+python kn.py -g graph500_22 -s graph500_22_seed -c 10 -d 3 -p redisgraph -l graph500_22_unique_node -t 22 -i 10
+# 10 seeds, depth 6, 10 iterations per query
+python kn.py -g graph500_22 -s graph500_22_seed -c 10 -d 6 -p redisgraph -l graph500_22_unique_node -t 22 -i 10
 ```
 
 
