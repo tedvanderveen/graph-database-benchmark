@@ -18,7 +18,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--relfile", type=str, default='graph500_22', help="relfile"
     )
-    parser.add_argument("--seedfile", type=str, default='graph5000_220_seed', help="seed file")
+    parser.add_argument("--seedfile", type=str, default='graph500_220_seed', help="seed file")
     parser.add_argument("--inputdir", type=str, default='.', help="input dir")
     parser.add_argument("--datadir", type=str, default='data', help="datadir")
     args = parser.parse_args()

@@ -1,9 +1,4 @@
-Graph Database Benchmark : 
-
-
-
-
-# Full-Text Search Benchmark (FTSB)
+# Graph Database Benchmark
 This repo contains code for benchmarking Graph databases.
 
 - same datasets
