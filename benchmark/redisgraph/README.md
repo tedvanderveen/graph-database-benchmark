@@ -17,7 +17,7 @@ Graph benchmarking involves 3 phases: data retrieval, data loading/insertion, an
 ## Installation
 The easiest way to get and install the benchmark code is to use:
 ```bash
-git clone https://github.com/filipecosta90/graph-database-benchmark.git
+git clone https://github.com/RedisGraph/graph-database-benchmark.git
 cd graph-database-benchmark/benchmark/redisgraph
 sudo pip install -r requirements.txt
 ```
@@ -110,12 +110,12 @@ nohup python kn.py -g twitter_rv -s twitter_rv_net_seed -c 10 -d 6 -p redisgraph
 #### Building the benchmark client
 ```bash
 # clone the repo
-git clone https://github.com/filipecosta90/graph-database-benchmark.git       
+git clone https://github.com/RedisGraph/graph-database-benchmark.git       
                                                                 
 # make sure you're at this project folder
 cd graph-database-benchmark/benchmark/redisgraph
 
-docker build -t tigergraph_redisgraph .
+docker build -t graph-database-benchmark-redisgraph .
 ```
 #### Running the benchmark client
 ```bash
