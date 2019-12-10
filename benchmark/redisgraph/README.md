@@ -19,7 +19,7 @@ The easiest way to get and install the benchmark code is to use:
 ```bash
 git clone https://github.com/RedisGraph/graph-database-benchmark.git
 cd graph-database-benchmark/benchmark/redisgraph
-sudo pip install -r requirements.txt
+pip install --user -r requirements.txt
 ```
 
 #### Data retrieval 
@@ -32,7 +32,7 @@ Variables:
 1. `EDGE_FILE` (default: `dependent on the use case`)
 1. `NODE_FILE` (default: `dependent on the use case`)
 
-The easiest way to get the datasets required for the benchmark is to use one of the helper scrips:
+The easiest way to get the datasets required for the benchmark is to use one of the helper scripts:
 1. `./scripts/get_graph500_dataset.sh`
 or
 1. `./scripts/get_twitter_dataset.sh`

@@ -5,8 +5,8 @@ DATASET_DIR=${DATASET_DIR:-"graph500_22"}
 EXE_DIR=${EXE_DIR:-$(dirname $0)}
 source ${EXE_DIR}/common.sh
 
-# Prepare input files in RedisGraph bulk import format
-python generate_graph500_inputs.py --inputdir ${DATASET} || exit 1
+## Prepare input files in RedisGraph bulk import format
+#python generate_graph500_inputs.py --inputdir ${DATASET} || exit 1
 
 # Run RedisGraph bulk import script
 python bulk_insert.py graph500_22 -n data/graph500_22_unique_node -r data/graph500_22 \

@@ -8,7 +8,6 @@ This repo contains code for benchmarking Graph databases.
 - each vendor's benchmark is under
  /benchmark/vendor_name/
 - start with README under each folder
-- all test can be reproducible on EC2 or similar enviroment.
 
 Contact: benchmark@tigergraph.com
 

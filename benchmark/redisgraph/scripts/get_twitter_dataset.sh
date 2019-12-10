@@ -30,7 +30,7 @@ if [ ! -f ${DATA_EDGE_FILE_NAME} ]; then
   curl -O ${EDGE_FILE} | tar zxf -  >  ${DATA_EDGE_FILE_NAME}
 else
   echo "Dataset found locally at ${DATA_EDGE_FILE_NAME}. No need to retrieve again."
-fi./
+fi
 
 echo ""
 echo "---------------------------------------------------------------------------------"
