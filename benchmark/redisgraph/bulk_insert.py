@@ -110,7 +110,7 @@ class EntityFile(object):
         self.infile = io.open(filename, 'rt', encoding='utf-8')
         # Initialize CSV reader that ignores leading whitespace in each field
         # and does not modify input quote characters
-        self.reader = csv.reader(self.infile, skipinitialspace=True, quoting=csv.QUOTE_NONE)
+        self.reader = csv.reader(self.infile, delimiter=' ', skipinitialspace=True, quoting=csv.QUOTE_NONE)
 
         self.prop_offset = 0  # Starting index of properties in row
         self.prop_count = 0  # Number of properties per entity
