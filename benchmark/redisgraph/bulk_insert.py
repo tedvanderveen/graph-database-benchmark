@@ -110,7 +110,7 @@ class EntityFile(object):
         self.infile = io.open(filename, 'rt', encoding='utf-8')
         # Initialize CSV reader that ignores leading whitespace in each field
         # and does not modify input quote characters
-        self.reader = csv.reader(self.infile, delimiter=' ', skipinitialspace=True, quoting=csv.QUOTE_NONE)
+        self.reader = csv.reader(self.infile, delimiter='\t', skipinitialspace=True, quoting=csv.QUOTE_NONE)
 
         self.prop_offset = 0  # Starting index of properties in row
         self.prop_count = 0  # Number of properties per entity
@@ -248,15 +248,22 @@ class RelationType(EntityFile):
 
     def process_entities(self, expected_col_count):
         entities_created = 0
+        skipped_entity_creation_lines = 0
         with click.progressbar(self.reader, length=self.entities_count, label=self.entity_str) as reader:
             for row in reader:
                 self.validate_row(expected_col_count, row)
                 try:
                     src = NODE_DICT[row[0]]
+
+                except KeyError as e:
+                    print("Relationship specified a non-existent identifier for src node '%s'"%(row[0]))
+                    continue
+                try:
                     dest = NODE_DICT[row[1]]
                 except KeyError as e:
-                    print("Relationship specified a non-existent identifier.")
-                    raise e
+                    print("Relationship specified a non-existent identifier for dst node '%s'"%(row[1]))
+                    continue
+
                 fmt = "=QQ"  # 8-byte unsigned ints for src and dest
                 row_binary = struct.pack(fmt, src, dest) + self.pack_props(row)
                 row_binary_len = len(row_binary)
@@ -274,7 +281,7 @@ class RelationType(EntityFile):
                 self.binary_size += row_binary_len
                 self.binary_entities.append(row_binary)
             QUERY_BUF.reltypes.append(self.to_binary())
-        print("%d relations created for type '%s'" % (entities_created, self.entity_str))
+        print("%d relations created for type '%s'. skipped %d entities due to non exiting identifier" % (entities_created, self.entity_str, skipped_entity_creation_lines))
 
 
 # Convert a single CSV property field into a binary stream.
