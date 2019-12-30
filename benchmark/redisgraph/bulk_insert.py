@@ -238,8 +238,8 @@ class RelationType(EntityFile):
         expected_col_count = len(header)
         self.prop_count = expected_col_count - 2
         if self.prop_count < 0:
-            raise CSVError("Relation file '%s' should have at least 2 elements in header line."
-                           % (self.infile.name))
+            raise CSVError("Relation file '%s' should have at least 2 elements in header line. Has %d elements.".format(
+                           (self.infile.name),self.prop_count))
 
         self.prop_offset = 2
         self.packed_header = self.pack_header(header)  # skip src and dest identifiers
