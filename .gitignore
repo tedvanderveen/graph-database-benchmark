@@ -1,5 +1,5 @@
 # RedisGraph temp output
-benchmark/redisgraph/data/**
+#benchmark/redisgraph/data/**
 benchmark/redisgraph/result_redisgraph/**
 
 # redis RDB files

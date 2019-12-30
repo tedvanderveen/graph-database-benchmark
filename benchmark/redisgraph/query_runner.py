@@ -47,7 +47,7 @@ class RedisGraphQueryRunner(QueryRunner):
             query = "MATCH (s:%s)-[*%d]->(t) WHERE s.id=%d RETURN count(t)" % (self.label, int(depth), int(root))
             result = self.driver.execute_command('graph.query', self.graphid, query)
         except Exception as e:  # timeout, we return -1, reset session
-            print("Exception: %s" % e)
+            print("Query '%s' resulted in Exception: %s" % (query,e))
             raise e
             return -1
         else:
