@@ -8,7 +8,7 @@ source ${EXE_DIR}/common.sh
 #python generate_twitter_inputs.py ${DATASET} || exit 1
 
 # Run RedisGraph bulk import script
-python bulk_insert.py twitter_rv_net -n data/twitter_rv_net_unique_node -r data/twitter_rv_net \
+python bulk_insert.py twitter_rv_net -n ${DATASET}/twitter_rv_net_unique_node -r ${DATASET}/twitter_rv_net \
   --host ${DATABASE_HOST} --port ${DATABASE_PORT} || exit 1
 
 # Create index on node ID property
