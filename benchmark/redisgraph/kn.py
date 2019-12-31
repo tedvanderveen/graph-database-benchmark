@@ -223,7 +223,7 @@ def RunKNLatency(graphid, count, depth, provider, label, threads, iterations, ur
 
     globalstart = timer()
     password = None
-    if len(passwd) > 0:
+    if passwd is not None and len(passwd) > 0:
         password=passwd
     res = pool.apply_async(RunKNLatencyThread, args=(graphid, depth, provider, label, seedPool, url, password))
     for s in seeds:
