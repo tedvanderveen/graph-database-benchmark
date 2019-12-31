@@ -105,7 +105,7 @@ def GetSeeds(seed_file_path, count):
 def RunKNLatencyThread( graphid, depth, provider, label, seedPool, url):
     seedReports = {}
     if provider == "redisgraph":
-        runner = RedisGraphQueryRunner(graphid, label, url)
+        runner = RedisGraphQueryRunner(graphid, label, url, passwd )
     elif provider == "tigergraph":
         runner = TigerGraphQueryRunner()
     else:
@@ -198,7 +198,7 @@ class ConsoleUpdaterThread(threading.Thread):
         exit(0)
 
 
-def RunKNLatency(graphid, count, depth, provider, label, threads, iterations, url, seed, stdout, rules ):
+def RunKNLatency(graphid, count, depth, provider, label, threads, iterations, url, seed, stdout, rules, passwd ):
     # create result folder
     global seedReports
     global globalstart
@@ -225,7 +225,7 @@ def RunKNLatency(graphid, count, depth, provider, label, threads, iterations, ur
 
     # with multiprocessing.Pool(processes=8) as pool:
 
-    res = pool.apply_async(RunKNLatencyThread, args=(graphid, depth, provider, label, seedPool, url,))
+    res = pool.apply_async(RunKNLatencyThread, args=(graphid, depth, provider, label, seedPool, url, passwd))
     for s in seeds:
         for iter in range(iterations):
             seedPool.put(s)
@@ -292,6 +292,9 @@ if __name__ == '__main__':
         "--url", "-u", type=str, default="127.0.0.1:6379", help="DB url"
     )
     parser.add_argument(
+        "--password", type=str, default=None, help="password"
+    )
+    parser.add_argument(
         "--label", "-l", type=str, default="graph500_22_unique_node", help="node label"
     )
     parser.add_argument(
@@ -313,4 +316,4 @@ if __name__ == '__main__':
     # pbar = tqdm(total=(args.iterations*args.count))
 
     RunKNLatency( args.graphid, args.count, args.depth, args.provider, args.label, args.threads,
-                 args.iterations, args.url, args.seed, args.stdout, rules )
+                 args.iterations, args.url, args.seed, args.stdout, rules, args.password )

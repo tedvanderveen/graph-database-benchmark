@@ -35,12 +35,12 @@ class QueryRunner():
 
 
 class RedisGraphQueryRunner(QueryRunner):
-    def __init__(self, graphid, label, url="127.0.0.1:6379"):
+    def __init__(self, graphid, label, url="127.0.0.1:6379", passwd=None):
         QueryRunner.__init__(self)
         ip, port = url.split(':')
         self.graphid = graphid
         self.label = label
-        self.driver = redis.Redis(ip, int(port))
+        self.driver = redis.Redis(ip, int(port),password=passwd)
 
     def KN(self, root, depth):
         try:
