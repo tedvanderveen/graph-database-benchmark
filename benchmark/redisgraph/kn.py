@@ -22,6 +22,7 @@ from query_runner import *
 
 # Global, map of reports.
 seedReports = {}
+connection_pool = None
 
 #####################################################################
 # Initialize seed reporting,
@@ -102,10 +103,10 @@ def GetSeeds(seed_file_path, count):
 # function: thread worker, pull work item from pool
 # and execute query via runner
 ################################################################
-def RunKNLatencyThread( graphid, depth, provider, label, seedPool, url, passwd):
+def RunKNLatencyThread( graphid, depth, provider, label, seedPool, url, connection_pool, passwd):
     seedReports = {}
     if provider == "redisgraph":
-        runner = RedisGraphQueryRunner(graphid, label, url, passwd )
+        runner = RedisGraphQueryRunner(graphid, label, url, connection_pool, passwd )
     elif provider == "tigergraph":
         runner = TigerGraphQueryRunner()
     else:
@@ -202,8 +203,8 @@ def RunKNLatency(graphid, count, depth, provider, label, threads, iterations, ur
     # create result folder
     global seedReports
     global globalstart
-    global totalrequests
-    global requestsissued
+    global connection_pool
+
     requestsissued = 0
     seeds = GetSeeds(seed, count)
     totalrequests = len(seeds * iterations)
@@ -225,7 +226,7 @@ def RunKNLatency(graphid, count, depth, provider, label, threads, iterations, ur
     password = None
     if passwd is not None and len(passwd) > 0:
         password=passwd
-    res = pool.apply_async(RunKNLatencyThread, args=(graphid, depth, provider, label, seedPool, url, password))
+    res = pool.apply_async(RunKNLatencyThread, args=(graphid, depth, provider, label, seedPool, url, connection_pool, password))
     for s in seeds:
         for iter in range(iterations):
             seedPool.put(s)

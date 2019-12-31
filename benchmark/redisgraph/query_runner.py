@@ -35,22 +35,27 @@ class QueryRunner():
 
 
 class RedisGraphQueryRunner(QueryRunner):
-    def __init__(self, graphid, label, url="127.0.0.1:6379", passwd=None):
+    def __init__(self, graphid, label, url="127.0.0.1:6379", connection_pool=None, passwd=None):
         QueryRunner.__init__(self)
         ip, port = url.split(':')
         self.graphid = graphid
         self.label = label
-        self.driver = redis.Redis(ip, int(port),password=passwd)
+        if connection_pool is None:
+            self.connection_pool = redis.ConnectionPool(host=ip, port=port, password=passwd)
+        else:
+            self.connection_pool = connection_pool
+        self.driver = redis.StrictRedis(connection_pool=self.connection_pool)
 
     def KN(self, root, depth):
         try:
             query = "MATCH (s:%s)-[*%d]->(t) WHERE s.id=%d RETURN count(t)" % (self.label, int(depth), int(root))
-            result = self.driver.execute_command('graph.query', self.graphid, query, "--compact")
+            result = self.driver.execute_command('graph.query', self.graphid, query)
         except Exception as e:  # timeout, we return -1, reset session
             print("Query '%s' resulted in Exception: %s" % (query,e))
             raise e
             return -1
         else:
+            print(result)
             return float(result[0][1][0]) if len(result[0]) == 2 else 0
 
 
