@@ -102,7 +102,7 @@ def GetSeeds(seed_file_path, count):
 # function: thread worker, pull work item from pool
 # and execute query via runner
 ################################################################
-def RunKNLatencyThread( graphid, depth, provider, label, seedPool, url, connection_pool, passwd):
+def RunKNLatencyThread( graphid, depth, provider, label, seedPool, url, connection_pool, passwd, iterations):
     seedReports = {}
     if provider == "redisgraph":
         runner = RedisGraphQueryRunner(graphid, label, url, connection_pool, passwd )
@@ -125,25 +125,25 @@ def RunKNLatencyThread( graphid, depth, provider, label, seedPool, url, connecti
         if not seed:
             # Failed to get seed from pool, pool probably empty
             break
+        for i in range(iterations):
+            iterationSummary = {}
+            start = timer()
+            # the k-hop distinct neighbor size.
+            knsize = runner.KN(seed, depth)
+            # for timeout query, we return -1
+            end = timer()
+            if knsize == -1:
+                iterationTime = -1
+            else:
+                iterationTime = end - start
+                iterationTime *= 1000  # convert from seconds to ms
 
-        iterationSummary = {}
-        start = timer()
-        # the k-hop distinct neighbor size.
-        knsize = runner.KN(seed, depth)
-        # for timeout query, we return -1
-        end = timer()
-        if knsize == -1:
-            iterationTime = -1
-        else:
-            iterationTime = end - start
-            iterationTime *= 1000  # convert from seconds to ms
-
-        iterationSummary['seed'] = seed
-        iterationSummary['avgN'] = knsize
-        iterationSummary['totalTime'] = iterationTime
-        if seed not in seedReports:
-            seedReports[seed]=[]
-        seedReports[seed].append({'avgN': knsize, 'totalTime': iterationTime})
+            iterationSummary['seed'] = seed
+            iterationSummary['avgN'] = knsize
+            iterationSummary['totalTime'] = iterationTime
+            if seed not in seedReports:
+                seedReports[seed]=[]
+            seedReports[seed].append({'avgN': knsize, 'totalTime': iterationTime})
     return seedReports
 
 
@@ -198,43 +198,43 @@ class ConsoleUpdaterThread(threading.Thread):
         exit(0)
 
 
-def RunKNLatency(graphid, count, depth, provider, label, threads, clients, iterations, url, seed, stdout, rules, passwd ):
+def RunKNLatency(graphid, count, depth, provider, label, threads, iterations, url, seed, stdout, rules, passwd ):
     # create result folder
     global seedReports
     global globalstart
     global connection_pool
 
-    requestsissued = 0
     seeds = GetSeeds(seed, count)
-    totalrequests = len(seeds * iterations)
 
     pool = multiprocessing.Pool(processes=threads)
     m = multiprocessing.Manager()
-    seedPool = m.Queue(totalrequests)
+    seedPool = m.Queue(count)
 
     # Initialize seed reports
     InitSeedReports(seeds, iterations)
-    threadsProc = []
 
     # backgroundVisualUpdatesThread = ConsoleUpdaterThread(countQueue)
     # backgroundVisualUpdatesThread.daemon = True  # Daemonize thread
     # backgroundVisualUpdatesThread.start()  # Start the execution
     # Add each seed to pool.
+    for s in seeds:
+        seedPool.put(s)
 
-    globalstart = timer()
     password = None
     if passwd is not None and len(passwd) > 0:
         password=passwd
-    for i in range(clients*threads):
-        res = pool.apply_async(RunKNLatencyThread, args=(graphid, depth, provider, label, seedPool, url, connection_pool, password))
-    for s in seeds:
-        for iter in range(iterations):
-            seedPool.put(s)
-    globalTestTime = timer() - globalstart
-    overallSeedReports = {}
-    for i in range(clients*threads):
-        mm = res.get()
+    ress = []
+    globalstart = timer()
+    for i in range(threads):
+        ress.append( pool.apply_async(RunKNLatencyThread, args=(graphid, depth, provider, label, seedPool, url, connection_pool, password, iterations)) )
 
+    overallSeedReports = {}
+    pool.close()
+    pool.join()
+    globalTestTime = timer() - globalstart
+
+    for i in ress:
+        mm = i.get()
         for k,v in mm.items():
             if k not in overallSeedReports:
                 overallSeedReports[k] = [v][0]
@@ -254,14 +254,12 @@ def RunKNLatency(graphid, count, depth, provider, label, threads, clients, itera
 
         with open(outputPath, 'wt') as ofile:
             ofile.write(output)
-    #
-    #     HDR_LOG_NAME = "latency.hdrhist"
-    #     hdrPath = os.path.join(dirName, HDR_LOG_NAME)
-    #     with open(hdrPath, 'wt') as hdr_log:
-    #         hdrhist.output_percentile_distribution(hdr_log, 1000.0, 10)
-    #
+
+        HDR_LOG_NAME = "latency.hdrhist"
+        hdrPath = os.path.join(dirName, HDR_LOG_NAME)
+        with open(hdrPath, 'wt') as hdr_log:
+            hdrhist.output_percentile_distribution(hdr_log, 1000.0, 10)
     else:
-    #     hdrhist.output_percentile_distribution(sys.stdout, 1000.0, 10)
         print (output)
 
     for rule_name, rule_value in rules.items():
@@ -304,9 +302,6 @@ if __name__ == '__main__':
         "--threads", "-t", type=int, default=4, help="Number of threads"
     )
     parser.add_argument(
-        "--clients", type=int, default=50, help="Number of clients per thread"
-    )
-    parser.add_argument(
         "--iterations", "-i", type=int, default=1, help="number of iterations per query"
     )
     parser.add_argument('--stdout', dest='stdout', action='store_true', help="print report to stdout")
@@ -316,7 +311,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     rules = {'50.0': args.fail_q50}
-    # pbar = tqdm(total=(args.iterations*args.count))
 
-    RunKNLatency( args.graphid, args.count, args.depth, args.provider, args.label, args.threads, args.clients,
+    RunKNLatency( args.graphid, args.count, args.depth, args.provider, args.label, args.threads,
                  args.iterations, args.url, args.seed, args.stdout, rules, args.password )
