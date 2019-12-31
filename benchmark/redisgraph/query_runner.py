@@ -56,12 +56,12 @@ class RedisGraphQueryRunner(QueryRunner):
             return -1
         else:
             print(result)
-            print(result[0][1])
+            print(result[1][0])
             #  [0][0] [0][1]
             # [[b'count(t)'], [[115956]], [b'Query internal execution time: 29.827944 milliseconds']]
             # [[b'count(t)'], [], [b'Query internal execution time: 0.387752 milliseconds']]
 
-            return float(result[0][1][0]) if len(result[0][1]) > 0 else 0
+            return float(result[1][0][0]) if len(result[1][0]) > 0 else 0
 
 
 # TigerGraph query runner (compatible with v2.1.8)
