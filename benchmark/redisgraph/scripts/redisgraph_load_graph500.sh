@@ -9,7 +9,7 @@ source ${EXE_DIR}/common.sh
 #python generate_graph500_inputs.py --inputdir ${DATASET} || exit 1
 
 # Run RedisGraph bulk import script
-python3  bulk_insert.py graph500_22 --password ${PASSWORD} -n ${DATASET}/graph500_22_unique_node -r ${DATASET}/graph500_22 \
+python3  bulk_insert.py graph500_22 -n ${DATASET}/graph500_22_unique_node -r ${DATASET}/graph500_22 \
   --host ${DATABASE_HOST} --port ${DATABASE_PORT} || exit 1
 
 # Create index on node ID property
