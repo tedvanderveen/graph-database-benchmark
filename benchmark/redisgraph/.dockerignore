@@ -1,2 +1,5 @@
 data/**
 results_redisgraph/**
+*.rsb
+*.gz
+sample_data/**

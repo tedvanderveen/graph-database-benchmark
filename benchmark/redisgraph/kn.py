@@ -102,7 +102,7 @@ def GetSeeds(seed_file_path, count):
 # function: thread worker, pull work item from pool
 # and execute query via runner
 ################################################################
-def RunKNLatencyThread( graphid, depth, provider, label, seedPool, url):
+def RunKNLatencyThread( graphid, depth, provider, label, seedPool, url, passwd):
     seedReports = {}
     if provider == "redisgraph":
         runner = RedisGraphQueryRunner(graphid, label, url, passwd )
@@ -222,10 +222,10 @@ def RunKNLatency(graphid, count, depth, provider, label, threads, iterations, ur
     # Add each seed to pool.
 
     globalstart = timer()
-
-    # with multiprocessing.Pool(processes=8) as pool:
-
-    res = pool.apply_async(RunKNLatencyThread, args=(graphid, depth, provider, label, seedPool, url, passwd))
+    password = None
+    if len(passwd) > 0:
+        password=passwd
+    res = pool.apply_async(RunKNLatencyThread, args=(graphid, depth, provider, label, seedPool, url, password))
     for s in seeds:
         for iter in range(iterations):
             seedPool.put(s)
