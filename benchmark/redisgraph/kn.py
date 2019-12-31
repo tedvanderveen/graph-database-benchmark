@@ -12,6 +12,8 @@ import argparse
 import multiprocessing
 import os
 import sys
+import threading
+import time
 from timeit import default_timer as timer
 
 from hdrh.histogram import HdrHistogram
@@ -20,7 +22,6 @@ from query_runner import *
 
 # Global, map of reports.
 seedReports = {}
-
 
 #####################################################################
 # Initialize seed reporting,
@@ -36,13 +37,13 @@ def InitSeedReports(seeds, iterations):
 #####################################################################
 # Generate a report summary.
 #######################################################################
-def FinalizeReport(seedReports, unique_node_file, depth, threads, debug):
+def FinalizeReport(seedReports,  depth, debug, totalTestTime):
     # seed=19284, k=1, runId=0, avgNeighbor=91.0, execTime=0.197093009949
     # AVG Seed iterations.
 
     output = ''
     avgKNSize = 0
-    threadsTotalRuntime = [0] * threads
+    # threadsTotalRuntime = [0] * threads
     runs = 0
     histogram = HdrHistogram(1, 1 * 1000 * 1000, 4)
 
@@ -51,8 +52,6 @@ def FinalizeReport(seedReports, unique_node_file, depth, threads, debug):
         for iterationReport in report:
             avgNeighbor = iterationReport['avgN']
             execTime = iterationReport['totalTime']
-            threadId = iterationReport['threadId']
-            threadsTotalRuntime[threadId] += execTime
             histogram.record_value(execTime * 1000)
             if debug is True:
                 output += "seed=%s, k=%d, avgNeighbor=%d, execTime=%f[ms]\r\n" % (seed, depth, avgNeighbor, execTime)
@@ -60,23 +59,20 @@ def FinalizeReport(seedReports, unique_node_file, depth, threads, debug):
 
             avgKNSize += avgNeighbor
             runs += 1
+    if avgKNSize != 0:
+        avgKNSize /= runs
 
-    avgKNSize /= runs
-
-    # We're interested in how much time did it took us to compute a single query on average
-    # Our total run time equals max(threadsTotalRuntime), and we've completed running
-    # N queries.
-    totalRuntime = max(threadsTotalRuntime)
+    avgRPS = float(histogram.total_count) / totalTestTime
 
     output += "**************************************************************\r\n"
-    output += "Summary : avgKNSize=%f, avgQueryTime=%f[ms], totalRuntime=%f[ms]\r\n" % (
-        avgKNSize, histogram.get_mean_value() / 1000.0,
-        totalRuntime)
-    output += "Latency by percentile : q50=%f[ms], q99=%f[ms], q99.99=%f[ms], q99.9999=%f[ms], \r\n" % (
+    output += "Summary : avgKNSize=%f, avgQueryTime=%f[ms]\r\n" % (
+        avgKNSize, histogram.get_mean_value() / 1000.0)
+    output += "Requests: totalRequests=[%d], avgRPS=%.2f[RPS]\r\n" % (histogram.total_count, avgRPS)
+    output += "Latency by percentile : q50=%f[ms], q99=%f[ms], q99.99=%f[ms], q99.999=%f[ms], \r\n" % (
         histogram.get_value_at_percentile(50.0) / 1000.0,
         histogram.get_value_at_percentile(90.0) / 1000.0,
         histogram.get_value_at_percentile(99.99) / 1000.0,
-        histogram.get_value_at_percentile(99.9999) / 1000.0)
+        histogram.get_value_at_percentile(99.999) / 1000.0)
 
     output += "**************************************************************\r\n"
 
@@ -94,7 +90,7 @@ def GetSeeds(seed_file_path, count):
 
     # Open seed file
     with open(seed_file_path, 'r') as f:
-        pre_nodes = f.read().split()
+        pre_nodes = f.read().splitlines()
         if len(pre_nodes) >= count:
             return pre_nodes[0:count]
         else:
@@ -106,8 +102,8 @@ def GetSeeds(seed_file_path, count):
 # function: thread worker, pull work item from pool
 # and execute query via runner
 ################################################################
-def RunKNLatencyThread(datadir, graphid, threadId, depth, provider, label, seedPool, reportQueue, iterations, url,
-                       seed):
+def RunKNLatencyThread( graphid, depth, provider, label, seedPool, url):
+    seedReports = {}
     if provider == "redisgraph":
         runner = RedisGraphQueryRunner(graphid, label, url)
     elif provider == "tigergraph":
@@ -142,11 +138,13 @@ def RunKNLatencyThread(datadir, graphid, threadId, depth, provider, label, seedP
             iterationTime = end - start
             iterationTime *= 1000  # convert from seconds to ms
 
-        iterationSummary['threadId'] = threadId
         iterationSummary['seed'] = seed
         iterationSummary['avgN'] = knsize
         iterationSummary['totalTime'] = iterationTime
-        reportQueue.put(iterationSummary, False)
+        if seed not in seedReports:
+            seedReports[seed]=[]
+        seedReports[seed].append({'avgN': knsize, 'totalTime': iterationTime})
+    return seedReports
 
 
 ###############################################################
@@ -154,56 +152,97 @@ def RunKNLatencyThread(datadir, graphid, threadId, depth, provider, label, seedP
 # query for a given set of seeds.
 ################################################################
 
+class ConsoleUpdaterThread(threading.Thread):
 
-def RunKNLatency(data_dir, graphid, count, depth, provider, label, threads, iterations, url, seed, stdout, rules):
+    def __init__(self, countQueue, interval=1):
+        threading.Thread.__init__(self)
+
+        # The shutdown_flag is a threading.Event object that
+        # indicates whether the thread should be terminated.
+        self.shutdown_flag = threading.Event()
+        self.countQueue = countQueue
+
+        """ Constructor
+        :type interval: int
+        :param interval: Check interval, in seconds
+        """
+        self.interval = interval
+
+    def run(self):
+        global globalstart
+        global totalrequests
+        global requestsissued
+        """ Method that runs forever """
+        while not self.countQueue.empty():
+            nr = None
+            try:
+                nr = self.countQueue.get(True)
+                requestsissued = requestsissued + nr
+            except Exception as inst:
+                break
+
+            # Make sure we've got a seed.
+            if not nr:
+                # Failed to get seed from pool, pool probably empty
+                break
+
+            avgRPS = float(requestsissued) / float((timer() - globalstart))
+            sys.stdout.write("\rTotal Requests %d \t\t %.2f RPS" % (requestsissued, avgRPS))
+            sys.stdout.flush()
+
+            time.sleep(self.interval)
+
+        avgRPS = float(requestsissued) / float((timer() - globalstart))
+        sys.stdout.write("\rFinal Total Requests %d \t\t %.2f RPS\n" % (requestsissued, avgRPS))
+        sys.stdout.flush()
+        exit(0)
+
+
+def RunKNLatency(graphid, count, depth, provider, label, threads, iterations, url, seed, stdout, rules ):
     # create result folder
     global seedReports
-    seedfile = os.path.join(data_dir, seed)
-    seeds = GetSeeds(seedfile, count)
+    global globalstart
+    global totalrequests
+    global requestsissued
+    requestsissued = 0
+    seeds = GetSeeds(seed, count)
+    totalrequests = len(seeds * iterations)
 
-    # Create a pool of seeds.
-    seedPool = multiprocessing.Queue(len(seeds) * iterations)
-
-    # Thread will report their output using this queue.
-    reportQueue = multiprocessing.Queue(len(seeds) * iterations)
-
-    # Add each seed to pool.
-    for s in seeds:
-        for iter in range(iterations):
-            seedPool.put(s)
+    pool = multiprocessing.Pool(processes=threads)
+    m = multiprocessing.Manager()
+    seedPool = m.Queue(totalrequests)
 
     # Initialize seed reports
     InitSeedReports(seeds, iterations)
     threadsProc = []
-    for tid in range(threads):
-        p = multiprocessing.Process(target=RunKNLatencyThread,
-                                    args=(
-                                        data_dir, graphid, tid, depth, provider, label, seedPool, reportQueue,
-                                        iterations,
-                                        url, seed))
-        threadsProc.append(p)
 
-    # Launch threads
-    for t in threadsProc:
-        t.start()
+    # backgroundVisualUpdatesThread = ConsoleUpdaterThread(countQueue)
+    # backgroundVisualUpdatesThread.daemon = True  # Daemonize thread
+    # backgroundVisualUpdatesThread.start()  # Start the execution
+    # Add each seed to pool.
 
-    # Wait for all threads to join
-    for t in threadsProc:
-        t.join()
+    globalstart = timer()
 
-    # Aggregate reports
-    print("Aggregate reports")
-    while not reportQueue.empty():
-        report = reportQueue.get(False)
-        seed = report['seed']
-        avgN = report['avgN']
-        threadId = report['threadId']
-        totalTime = report['totalTime']
-        seedReports[seed].append({'avgN': avgN, 'totalTime': totalTime, 'threadId': threadId})
+    # with multiprocessing.Pool(processes=8) as pool:
+
+    res = pool.apply_async(RunKNLatencyThread, args=(graphid, depth, provider, label, seedPool, url,))
+    for s in seeds:
+        for iter in range(iterations):
+            seedPool.put(s)
+    globalend = timer()
+    mm = res.get()
+    globalTestTime = globalend - globalstart
+
+    overallSeedReports = {}
+
+    for k,v in mm.items():
+        if k not in overallSeedReports:
+            overallSeedReports[k] = [v][0]
+        else:
+            overallSeedReports[k].append(v[0])
 
     print("Finalizing report")
-    unique_node_file = os.path.join(data_dir, label)
-    output, hdrhist = FinalizeReport(seedReports, unique_node_file, depth, threads, False)
+    output, hdrhist = FinalizeReport(overallSeedReports, depth, False, globalTestTime)
 
     if stdout is False:
         dirName = "./result_" + provider + "/"
@@ -215,23 +254,23 @@ def RunKNLatency(data_dir, graphid, count, depth, provider, label, threads, iter
 
         with open(outputPath, 'wt') as ofile:
             ofile.write(output)
-
-        HDR_LOG_NAME = "latency.hdrhist"
-        hdrPath = os.path.join(dirName, HDR_LOG_NAME)
-        with open(hdrPath, 'wt') as hdr_log:
-            hdrhist.output_percentile_distribution(hdr_log, 1000.0, 10)
-
+    #
+    #     HDR_LOG_NAME = "latency.hdrhist"
+    #     hdrPath = os.path.join(dirName, HDR_LOG_NAME)
+    #     with open(hdrPath, 'wt') as hdr_log:
+    #         hdrhist.output_percentile_distribution(hdr_log, 1000.0, 10)
+    #
     else:
-        hdrhist.output_percentile_distribution(sys.stdout, 1000.0, 10)
-        print output
+    #     hdrhist.output_percentile_distribution(sys.stdout, 1000.0, 10)
+        print (output)
 
     for rule_name, rule_value in rules.items():
         quantile = float(rule_name)
         quantile_value = hdrhist.get_value_at_percentile(quantile) / 1000
         if quantile_value > rule_value:
-            print "Failing due to quantile {} latency value {}ms being larger than allowed ({})".format(quantile,
+            print ("Failing due to quantile {} latency value {} ms being larger than allowed ({})".format(quantile,
                                                                                                         quantile_value,
-                                                                                                        rule_value)
+                                                                                                        rule_value))
             sys.exit()
 
 
@@ -259,9 +298,6 @@ if __name__ == '__main__':
         "--seed", "-s", type=str, default="seed", help="seed file"
     )
     parser.add_argument(
-        "--data_dir", type=str, default="data", help="data dir"
-    )
-    parser.add_argument(
         "--threads", "-t", type=int, default=1, help="number of querying threads"
     )
     parser.add_argument(
@@ -274,5 +310,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     rules = {'50.0': args.fail_q50}
-    RunKNLatency(args.data_dir, args.graphid, args.count, args.depth, args.provider, args.label, args.threads,
-                 args.iterations, args.url, args.seed, args.stdout, rules)
+    # pbar = tqdm(total=(args.iterations*args.count))
+
+    RunKNLatency( args.graphid, args.count, args.depth, args.provider, args.label, args.threads,
+                 args.iterations, args.url, args.seed, args.stdout, rules )
