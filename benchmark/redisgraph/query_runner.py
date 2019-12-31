@@ -55,12 +55,12 @@ class RedisGraphQueryRunner(QueryRunner):
             raise e
             return -1
         else:
-            print(result)
-            print(result[1])
+            # print(result)
+            # print(result[1])
             #  [0][0] [0][1]
             # [[b'count(t)'], [[115956]], [b'Query internal execution time: 29.827944 milliseconds']]
             # [[b'count(t)'], [], [b'Query internal execution time: 0.387752 milliseconds']]
-
+            # [str, x]
             return float(result[1][0][0]) if len(result[1]) > 0 else 0
 
 
