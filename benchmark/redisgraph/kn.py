@@ -66,9 +66,8 @@ def FinalizeReport(seedReports,  depth, debug, totalTestTime):
     avgRPS = float(histogram.total_count) / (totalTestTime)
 
     output += "**************************************************************\r\n"
-    output += "Summary : avgKNSize=%f, avgQueryTime=%f[ms]\r\n" % (
-        avgKNSize, histogram.get_mean_value() / 1000.0)
-    output += "Requests: totalRequests=[%d], avgRPS=%.2f[RPS]\r\n" % (histogram.total_count, avgRPS)
+    output += "Summary : avgKNSize=%f, avgQueryTime=%f[ms]\r\n" % ( avgKNSize, histogram.get_mean_value() / 1000.0)
+    output += "Requests: totalRequests=[%d], totalTestTime=[%d], avgRPS=%.2f[RPS]\r\n" % (histogram.total_count, totalTestTime, avgRPS)
     output += "Latency by percentile : q50=%f[ms], q99=%f[ms], q99.99=%f[ms], q99.999=%f[ms], \r\n" % (
         histogram.get_value_at_percentile(50.0) / 1000.0,
         histogram.get_value_at_percentile(90.0) / 1000.0,
@@ -230,9 +229,8 @@ def RunKNLatency(graphid, count, depth, provider, label, threads, iterations, ur
     for s in seeds:
         for iter in range(iterations):
             seedPool.put(s)
-    globalend = timer()
+    globalTestTime = timer() - globalstart
     mm = res.get()
-    globalTestTime = globalend - globalstart
 
     overallSeedReports = {}
 
