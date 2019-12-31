@@ -62,7 +62,7 @@ def FinalizeReport(seedReports,  depth, debug, totalTestTime):
     if avgKNSize != 0:
         avgKNSize /= runs
 
-    avgRPS = float(histogram.total_count) / (totalTestTime*1000)
+    avgRPS = float(histogram.total_count) / (totalTestTime)
 
     output += "**************************************************************\r\n"
     output += "Summary : avgKNSize=%f, avgQueryTime=%f[ms]\r\n" % (
