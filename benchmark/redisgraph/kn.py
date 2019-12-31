@@ -198,7 +198,7 @@ class ConsoleUpdaterThread(threading.Thread):
         exit(0)
 
 
-def RunKNLatency(graphid, count, depth, provider, label, threads, iterations, url, seed, stdout, rules, passwd ):
+def RunKNLatency(graphid, count, depth, provider, label, threads, clients, iterations, url, seed, stdout, rules, passwd ):
     # create result folder
     global seedReports
     global globalstart
@@ -225,20 +225,21 @@ def RunKNLatency(graphid, count, depth, provider, label, threads, iterations, ur
     password = None
     if passwd is not None and len(passwd) > 0:
         password=passwd
-    res = pool.apply_async(RunKNLatencyThread, args=(graphid, depth, provider, label, seedPool, url, connection_pool, password))
+    for i in range(clients*threads):
+        res = pool.apply_async(RunKNLatencyThread, args=(graphid, depth, provider, label, seedPool, url, connection_pool, password))
     for s in seeds:
         for iter in range(iterations):
             seedPool.put(s)
     globalTestTime = timer() - globalstart
-    mm = res.get()
-
     overallSeedReports = {}
+    for i in range(clients*threads):
+        mm = res.get()
 
-    for k,v in mm.items():
-        if k not in overallSeedReports:
-            overallSeedReports[k] = [v][0]
-        else:
-            overallSeedReports[k].append(v[0])
+        for k,v in mm.items():
+            if k not in overallSeedReports:
+                overallSeedReports[k] = [v][0]
+            else:
+                overallSeedReports[k].append(v[0])
 
     print("Finalizing report")
     output, hdrhist = FinalizeReport(overallSeedReports, depth, False, globalTestTime)
@@ -300,7 +301,10 @@ if __name__ == '__main__':
         "--seed", "-s", type=str, default="seed", help="seed file"
     )
     parser.add_argument(
-        "--threads", "-t", type=int, default=1, help="number of querying threads"
+        "--threads", "-t", type=int, default=4, help="Number of threads"
+    )
+    parser.add_argument(
+        "--clients", type=int, default=50, help="Number of clients per thread"
     )
     parser.add_argument(
         "--iterations", "-i", type=int, default=1, help="number of iterations per query"
@@ -314,5 +318,5 @@ if __name__ == '__main__':
     rules = {'50.0': args.fail_q50}
     # pbar = tqdm(total=(args.iterations*args.count))
 
-    RunKNLatency( args.graphid, args.count, args.depth, args.provider, args.label, args.threads,
+    RunKNLatency( args.graphid, args.count, args.depth, args.provider, args.label, args.threads, args.clients,
                  args.iterations, args.url, args.seed, args.stdout, rules, args.password )
