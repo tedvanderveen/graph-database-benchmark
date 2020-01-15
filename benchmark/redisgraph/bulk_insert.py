@@ -112,7 +112,7 @@ class EntityFile(object):
         self.infile = io.open(filename, 'rt')
         # Initialize CSV reader that ignores leading whitespace in each field
         # and does not modify input quote characters
-        self.reader = csv.reader(self.infile, delimiter="\t", skipinitialspace=True, quoting=QUOTING)
+        self.reader = csv.reader(self.infile, delimiter=separator, skipinitialspace=True, quoting=QUOTING)
 
         self.prop_offset = 0 # Starting index of properties in row
         self.prop_count = 0 # Number of properties per entity
@@ -245,8 +245,7 @@ class RelationType(EntityFile):
         expected_col_count = len(header)
         self.prop_count = expected_col_count - 2
         if self.prop_count < 0:
-            raise CSVError("Relation file '%s' should have at least 2 elements in header line."
-                           % (self.infile.name))
+            raise CSVError("Relation file '{0}' should have at least 2 elements in header line. Count {1}. Header '{2}'".format(self.infile.name,self.prop_count,header))
 
         self.prop_offset = 2
         self.packed_header = self.pack_header(header) # skip src and dest identifiers

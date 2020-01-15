@@ -14,11 +14,9 @@ chmod a+rwx ${BULK_DATA_DIR}
 mkdir -p ${BULK_DATA_DIR}/${DATASET_NAME}
 chmod a+rwx ${BULK_DATA_DIR}/${DATASET_NAME}
 
-DATA_SEED_FILE_NAME=${BULK_DATA_DIR}/${DATASET_NAME}/graph500_22_seed
 DATA_EDGE_FILE_NAME=${BULK_DATA_DIR}/${DATASET_NAME}/graph500_22
 DATA_NODE_FILE_NAME=${BULK_DATA_DIR}/${DATASET_NAME}/graph500_22_unique_node
 
-cp graph500_22_seed ${DATA_SEED_FILE_NAME}
 echo ""
 echo "---------------------------------------------------------------------------------"
 echo "Retrieving ${EDGE_FILE}"
@@ -42,3 +40,11 @@ if [ ! -f ${DATA_NODE_FILE_NAME} ]; then
 else
   echo "Dataset found locally at ${DATA_NODE_FILE_NAME}. No need to retrieve again."
 fi
+
+
+echo ""
+echo "---------------------------------------------------------------------------------"
+echo "Prepare input files in RedisGraph bulk import format"
+echo "---------------------------------------------------------------------------------"
+
+python3 generate_graph500_inputs.py --inputdir ${BULK_DATA_DIR}/${DATASET_NAME} --outputdir ${BULK_DATA_DIR}/${DATASET_NAME} || exit 1
