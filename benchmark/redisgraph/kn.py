@@ -322,4 +322,4 @@ if __name__ == '__main__':
     rules = {'50.0': args.fail_q50}
 
     RunKNLatency( args.graphid, args.count, args.depth, args.provider, args.label, args.threads,
-                 args.iterations, , args.randomseed, args.url, args.seed, args.stdout, rules, args.password )
+                 args.iterations, args.randomseed, args.url, args.seed, args.stdout, rules, args.password )
