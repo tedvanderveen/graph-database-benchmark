@@ -97,7 +97,8 @@ def GetSeeds(seed_file_path, count, randomseed ):
 
             lower_bound  = random.randrange(0, len(pre_nodes)-count)
             finalList = pre_nodes[lower_bound:lower_bound+count]
-            return random.shuffle(finalList)
+            random.shuffle(finalList)
+            return finalList
 
         else:
             print("Seed file does not contain enough seeds.")

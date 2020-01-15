@@ -36,6 +36,7 @@ if __name__ == "__main__":
     updated_node_file = open(os.path.join(args.outputdir, args.nodefile+args.output_prefix), 'w')
     updated_node_file.write('id\n')  # Output a header row
     updated_relation_file = open(os.path.join(args.outputdir, args.relfile+args.output_prefix), 'w')
+    updated_relation_file_noheader = open(os.path.join(args.outputdir, args.relfile+args.output_prefix+"_noheader"), 'w')
     updated_relation_file.write('src,dest\n')  # Output a header row
     # Map every node ID to its line number
     # and generate an updated node file.
@@ -45,8 +46,10 @@ if __name__ == "__main__":
         for line in tqdm(f, total=num_lines):
             placement[int(line)] = updated_id
             updated_node_file.write('%d\n' % (updated_id))
+            updated_relation_file_noheader.write('%d\n' % (updated_id))
             updated_id += 1
     updated_node_file.close()
+    updated_relation_file_noheader.close()
 
     num_lines = sum(1 for line in open(os.path.join(args.inputdir, args.relfile)))
     with open(os.path.join(args.inputdir, args.relfile)) as f:

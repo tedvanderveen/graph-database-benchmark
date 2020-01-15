@@ -45,33 +45,17 @@ Sample output:
 ### Data insertion
 
 ##### Graph500
-```bash
-./scripts/redisgraph_load_graph500.sh
-```
+
 
 ```bash
-DATABASE_HOST=10.3.0.215 BULK_DATA_DIR=/root/bulk_data ./scripts/redisgraph_load_graph500.sh
+DATABASE_HOST=<...> BULK_DATA_DIR=/root/bulk_data ./scripts/redisgraph_load_graph500.sh
 ```
 
-Sample output:
-```bash
-+python bulk_insert.py graph500_22 -n data/graph500_22_unique_node -r data/graph500_22
-graph500_22_unique_node  [####################################]  100%          
-2396019 nodes created with label 'graph500_22_unique_node'
-graph500_22  [####################################]  100%          
-67108863 relations created for type 'graph500_22'
-Construction of graph 'graph500_22' complete: 2396019 nodes created, 67108863 relations created in 1410.983482 seconds
-+python graph_query.py --name "graph500_22" --query "create index on :graph500_22_unique_node(id)"
-```
 
 ##### Twitter Benchmark
-```bash
-./scripts/redisgraph_load_twitter.sh
-```
 
-Sample output:
 ```bash
-
+DATABASE_HOST=<...> BULK_DATA_DIR=/root/bulk_data ./scripts/redisgraph_load_twitter.sh
 ```
 
 
@@ -83,29 +67,29 @@ Results will be stored in "result_redisgraph" output directory.
 
 ##### Graph500
 
+Single Client Benchmark
 ```bash
-# 3000 seeds, depth 1, 1000 iterations per query ( Total of 3000K queries )
-python kn.py -g graph500_22 -s graph500_22_seed -c 3000 -d 1 -p redisgraph -l graph500_22_unique_node -t 22 -i 1000
-# 300 seeds, depth 2, 10 iterations per query
-python kn.py -g graph500_22 -s graph500_22_seed -c 300 -d 2 -p redisgraph -l graph500_22_unique_node -t 22 -i 10
-# 10 seeds, depth 3, 10 iterations per query
-python kn.py -g graph500_22 -s graph500_22_seed -c 10 -d 3 -p redisgraph -l graph500_22_unique_node -t 22 -i 10
-# 10 seeds, depth 6, 10 iterations per query
-python kn.py -g graph500_22 -s graph500_22_seed -c 10 -d 6 -p redisgraph -l graph500_22_unique_node -t 22 -i 10
+# 10000 seeds, depth 1, 100 iterations per query ( Total of 1M queries )
+WORKERS=1 DATABASE_HOST=<...> BULK_DATA_DIR=/tmp/bulk_data DEPTH=1 SEEDS=10000 ITERATIONS_PER_QUERY=100 ./scripts/redisgraph_run_graph500.sh
+# 10000 seeds, depth 2, 100 iterations per query ( Total of 1M queries )
+WORKERS=1 DATABASE_HOST=<...> BULK_DATA_DIR=/tmp/bulk_data DEPTH=2 SEEDS=10000 ITERATIONS_PER_QUERY=100 ./scripts/redisgraph_run_graph500.sh
+# 10000 seeds, depth 3, 100 iterations per query ( Total of 1M queries )
+WORKERS=1 DATABASE_HOST=<...> BULK_DATA_DIR=/tmp/bulk_data DEPTH=2 SEEDS=10000 ITERATIONS_PER_QUERY=100 ./scripts/redisgraph_run_graph500.sh
+# 10000 seeds, depth 6, 100 iterations per query ( Total of 1M queries )
+WORKERS=1 DATABASE_HOST=<...> BULK_DATA_DIR=/tmp/bulk_data DEPTH=2 SEEDS=10000 ITERATIONS_PER_QUERY=100 ./scripts/redisgraph_run_graph500.sh
 ```
 
-
+Multi Client Benchmark
 ```bash
-# 3000 seeds, depth 1, 1000 iterations per query ( Total of 3000K queries )
-DATABASE_HOST=10.3.0.215 BULK_DATA_DIR=/root/bulk_data DEPTH=1 SEEDS=10 ITERATIONS_PER_QUERY=10 ./scripts/redisgraph_run_graph500.sh
-# 300 seeds, depth 2, 10 iterations per query
-python kn.py -g graph500_22 -s graph500_22_seed -c 300 -d 2 -p redisgraph -l graph500_22_unique_node -t 22 -i 10
-# 10 seeds, depth 3, 10 iterations per query
-python kn.py -g graph500_22 -s graph500_22_seed -c 10 -d 3 -p redisgraph -l graph500_22_unique_node -t 22 -i 10
-# 10 seeds, depth 6, 10 iterations per query
-python kn.py -g graph500_22 -s graph500_22_seed -c 10 -d 6 -p redisgraph -l graph500_22_unique_node -t 22 -i 10
+# 10000 seeds, depth 1, 100 iterations per query ( Total of 1M queries )
+WORKERS=22 DATABASE_HOST=<...> BULK_DATA_DIR=/tmp/bulk_data DEPTH=1 SEEDS=10000 ITERATIONS_PER_QUERY=100 ./scripts/redisgraph_run_graph500.sh
+# 10000 seeds, depth 2, 100 iterations per query ( Total of 1M queries )
+WORKERS=22 DATABASE_HOST=<...> BULK_DATA_DIR=/tmp/bulk_data DEPTH=2 SEEDS=10000 ITERATIONS_PER_QUERY=100 ./scripts/redisgraph_run_graph500.sh
+# 10000 seeds, depth 3, 100 iterations per query ( Total of 1M queries )
+WORKERS=22 DATABASE_HOST=<...> BULK_DATA_DIR=/tmp/bulk_data DEPTH=2 SEEDS=10000 ITERATIONS_PER_QUERY=100 ./scripts/redisgraph_run_graph500.sh
+# 10000 seeds, depth 6, 100 iterations per query ( Total of 1M queries )
+WORKERS=22 DATABASE_HOST=<...> BULK_DATA_DIR=/tmp/bulk_data DEPTH=2 SEEDS=10000 ITERATIONS_PER_QUERY=100 ./scripts/redisgraph_run_graph500.sh
 ```
-
 
 ##### Twitter Benchmark
 
