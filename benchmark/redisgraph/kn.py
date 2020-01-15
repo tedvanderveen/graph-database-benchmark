@@ -15,7 +15,7 @@ import sys
 import threading
 import time
 from timeit import default_timer as timer
-
+import random
 from hdrh.histogram import HdrHistogram
 
 from query_runner import *
@@ -83,16 +83,22 @@ def FinalizeReport(seedReports,  depth, debug, totalTestTime):
 # K-hop-path-neighbor-count benchmark workload.
 # (1) read prepared random nodes from a seed file under seed folder.
 #######################################################################
-def GetSeeds(seed_file_path, count):
+def GetSeeds(seed_file_path, count, randomseed ):
     if not os.path.exists(seed_file_path):
         print("Seed file does not exists: " + seed_file_path)
         sys.exit()
+
+    random.seed(randomseed)
 
     # Open seed file
     with open(seed_file_path, 'r') as f:
         pre_nodes = f.read().splitlines()
         if len(pre_nodes) >= count:
-            return pre_nodes[0:count]
+
+            lower_bound  = random.randrange(0, len(pre_nodes)-count)
+            finalList = pre_nodes[lower_bound:lower_bound+count]
+            return random.shuffle(finalList)
+
         else:
             print("Seed file does not contain enough seeds.")
             sys.exit()
@@ -204,7 +210,7 @@ def RunKNLatency(graphid, count, depth, provider, label, threads, iterations, ur
     global globalstart
     global connection_pool
 
-    seeds = GetSeeds(seed, count)
+    seeds = GetSeeds(seed, count, randomseed )
 
     pool = multiprocessing.Pool(processes=threads)
     m = multiprocessing.Manager()
@@ -226,7 +232,7 @@ def RunKNLatency(graphid, count, depth, provider, label, threads, iterations, ur
     ress = []
     globalstart = timer()
     for i in range(threads):
-        ress.append( pool.apply_async(RunKNLatencyThread, args=(graphid, depth, provider, label, seedPool, url, connection_pool, password, iterations)) )
+        ress.append( pool.apply_async(RunKNLatencyThread, args=(graphid, depth, provider, label, seedPool, url, connection_pool, password, iterations )) )
 
     overallSeedReports = {}
     pool.close()
@@ -303,6 +309,9 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         "--iterations", "-i", type=int, default=1, help="number of iterations per query"
+    )
+    parser.add_argument(
+        "--randomseed", type=int, default=123, help="Pseudo Random Number Seed to be used for selecting the range interval of seeds file"
     )
     parser.add_argument('--stdout', dest='stdout', action='store_true', help="print report to stdout")
     parser.add_argument(

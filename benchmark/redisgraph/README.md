@@ -49,6 +49,10 @@ Sample output:
 ./scripts/redisgraph_load_graph500.sh
 ```
 
+```bash
+DATABASE_HOST=10.3.0.215 BULK_DATA_DIR=/root/bulk_data ./scripts/redisgraph_load_graph500.sh
+```
+
 Sample output:
 ```bash
 +python bulk_insert.py graph500_22 -n data/graph500_22_unique_node -r data/graph500_22
@@ -80,8 +84,20 @@ Results will be stored in "result_redisgraph" output directory.
 ##### Graph500
 
 ```bash
-# 300 seeds, depth 1, 10 iterations per query
-python kn.py -g graph500_22 -s graph500_22_seed -c 300 -d 1 -p redisgraph -l graph500_22_unique_node -t 22 -i 10
+# 3000 seeds, depth 1, 1000 iterations per query ( Total of 3000K queries )
+python kn.py -g graph500_22 -s graph500_22_seed -c 3000 -d 1 -p redisgraph -l graph500_22_unique_node -t 22 -i 1000
+# 300 seeds, depth 2, 10 iterations per query
+python kn.py -g graph500_22 -s graph500_22_seed -c 300 -d 2 -p redisgraph -l graph500_22_unique_node -t 22 -i 10
+# 10 seeds, depth 3, 10 iterations per query
+python kn.py -g graph500_22 -s graph500_22_seed -c 10 -d 3 -p redisgraph -l graph500_22_unique_node -t 22 -i 10
+# 10 seeds, depth 6, 10 iterations per query
+python kn.py -g graph500_22 -s graph500_22_seed -c 10 -d 6 -p redisgraph -l graph500_22_unique_node -t 22 -i 10
+```
+
+
+```bash
+# 3000 seeds, depth 1, 1000 iterations per query ( Total of 3000K queries )
+DATABASE_HOST=10.3.0.215 BULK_DATA_DIR=/root/bulk_data DEPTH=1 SEEDS=10 ITERATIONS_PER_QUERY=10 ./scripts/redisgraph_run_graph500.sh
 # 300 seeds, depth 2, 10 iterations per query
 python kn.py -g graph500_22 -s graph500_22_seed -c 300 -d 2 -p redisgraph -l graph500_22_unique_node -t 22 -i 10
 # 10 seeds, depth 3, 10 iterations per query
