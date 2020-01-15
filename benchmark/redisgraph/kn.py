@@ -204,7 +204,7 @@ class ConsoleUpdaterThread(threading.Thread):
         exit(0)
 
 
-def RunKNLatency(graphid, count, depth, provider, label, threads, iterations, url, seed, stdout, rules, passwd ):
+def RunKNLatency(graphid, count, depth, provider, label, threads, iterations, randomseed, url, seed, stdout, rules, passwd ):
     # create result folder
     global seedReports
     global globalstart
@@ -322,4 +322,4 @@ if __name__ == '__main__':
     rules = {'50.0': args.fail_q50}
 
     RunKNLatency( args.graphid, args.count, args.depth, args.provider, args.label, args.threads,
-                 args.iterations, args.url, args.seed, args.stdout, rules, args.password )
+                 args.iterations, , args.randomseed, args.url, args.seed, args.stdout, rules, args.password )
