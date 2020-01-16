@@ -50,7 +50,7 @@ done
 
 SEEDS=100
 
-for DEPTH in 3; do
+for DEPTH in 6; do
 for WORKERS in 1 22; do
 for run in 1 2 3; do
     echo "Running depth ${DEPTH}. Workers ${WORKERS}. RUN $run"
