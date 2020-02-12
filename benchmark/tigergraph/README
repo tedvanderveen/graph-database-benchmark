@@ -45,11 +45,7 @@ TigerGraph Version
 
 Install TigerGraph 
 ===================
-
 - installation video reference here https://www.youtube.com/watch?v=q-vAioBUwkI&t=3s
-
-- put the ExprFunctions.hpp under tigergraph/dev/gdk/gsql/src/QueryUdf/ folder.
-  It contains a udf for WCC use. 
 
 Open READ and WRITE permission for TigerGraph User
 ==================================================
